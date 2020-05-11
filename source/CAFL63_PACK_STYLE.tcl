@@ -187,7 +187,7 @@ proc readca {url} {
   }
   return $cer
 }
-proc waitevent {w } {
+proc waitevent {w {interval 20}} {
   global typesys
 #  set w ".topwait"
   catch {destroy $w}
@@ -196,7 +196,7 @@ proc waitevent {w } {
   pack $w.lwait -pady 5 -padx 5 -fill x
   ttk::progressbar $w.fwait -mode indeterminate
   pack $w.fwait -fill x -expand 1
-  $w.fwait start
+  $w.fwait start $interval
 }
 #Загрузка дистрибутива
 proc readdistr {urldistr w} {
@@ -762,6 +762,7 @@ if { $::tcl_platform(platform) eq "unix" &&
     tk_messageBox -title "Выбор утилиты lirssl_static"   -icon error -message "Нет полномочий на смену атрибутов\n$lirssl_static"
 }
 }
+
 font configure TkDefaultFont -size 10
 font configure TkFixedFont -size 10
 
@@ -6534,7 +6535,6 @@ proc cagui::FileEntry {w args} {
 }
 
 proc cagui::ProgressWindow_Create {w {title {Running ...}}  {message {}}} {
-    
     variable status
     global countfile
     global cancelexport
@@ -6546,28 +6546,24 @@ proc cagui::ProgressWindow_Create {w {title {Running ...}}  {message {}}} {
     
     frame $w.f -background #e0e0da
     frame $w.bt -background #e0e0da
-    #pack $w.f $w.bt -expand 1 -fill both
-    pack $w.f -expand 1 -fill both -padx 5 -pady 5 
-    pack $w.bt -expand 1 -fill both -padx 5 -pady 5 
+    pack $w.f -expand 1 -fill both -padx 2 -pady 2 
+    pack $w.bt -expand 1 -fill both -padx 2 -pady {0 2} 
 
-    
     ttk::button $w.bt.cancel -text "Отмена" -command {global cancelexport; set cancelexport 1}
-    pack $w.bt.cancel -side right -padx 5 -pady 5;# -expand 1 -fill both
-    
+    pack $w.bt.cancel -side right -padx 5 -pady 5
     
     label $w.f.l1 -text "$message" -font {Times 10 bold italic}
     label $w.f.status -textvariable "::cagui::status"
     set status "-"
     
-    ttk::progressbar $w.f.c -variable countfile -length 300
+    ttk::progressbar $w.f.c -variable countfile
 
     grid $w.f.l1 -row 0 -column 0 -columnspan 2 -sticky nw
     grid $w.f.status -row 1 -column 0 -columnspan 2 -sticky nw
-    grid $w.f.c -row 2 -column 0 -columnspan 2 -sticky nw
-    grid columnconfigure $w.f 0 -pad 8 -weight 0
+    grid $w.f.c -row 2 -column 0 -columnspan 2 -sticky nwe
+    grid columnconfigure $w.f 0 -pad 8 -weight 1
     grid columnconfigure $w.f 1 -pad 8 -weight 0
-    grid columnconfigure $w.f 2 -pad 8 -weight 1
-    grid rowconfigure    $w.f 0 -pad 8 -weight 0
+    grid columnconfigure    $w.f 0  -weight 1
     grid rowconfigure    $w.f 1 -weight 0
     grid rowconfigure    $w.f 2 -weight 0
     grid rowconfigure    $w.f 3 -weight 1
@@ -8068,6 +8064,16 @@ if { 0 } {
 }
 }
 
+proc updatewait {tt1} {
+    variable ttw
+    set tt2 [clock seconds]
+#    update
+    set tt2 [clock seconds]
+    if {[expr $tt2 - $tt1] > 1} {
+	set ttw 1
+    }
+    after  100 [list updatewait $tt1]
+}
 
 .cm.setupwizard eval {
         
@@ -8203,11 +8209,11 @@ if { 0 } {
                 return
             }
 	    set c [$this widget clientArea]
-	    waitevent .cm.topwait
+	    variable tt1
+	    waitevent .cm.topwait 10
 	    .cm.topwait configure -text "Идет создания БД УЦ"
 	    .cm.topwait.lwait configure -text "Начался процесс инициализации БД УЦ\n\nПридется подождать!"
 	    place .cm.topwait -in $c.e1  -relx 0.2 -rely 0.0 -relwidth 0.6
-	    update
 #tk_messageBox -title "Waitevent" -icon info -message "WAIT" -parent .cm
 
             set db(dir) $wizData(dir_ca)
@@ -8217,9 +8223,12 @@ if { 0 } {
 	    set filedb [file join $db(dir) "certdb.cadb"]
 #	puts $filedb
 	    if {[file exist $filedb] != 0} {
-		file delete -force $filedb
+		catch {certdb close}
+		file rename $filedb $filedb.1
+		file delete -force $filedb.1
 	    }
 	    sqlite3 certdb $filedb
+	    update
 #Создаем rootCA и keyCA
 	    debug::msg "cmd::createDB"
 
@@ -8252,16 +8261,28 @@ if { 0 } {
 #	}
 #Таблица сертификатов
 #autoincrement
+	    update
     	    certdb eval {create table certDB(  ckaID text primary key ,  
     	    nick text,  sernum text,  certPEM text, subject text, 
     	    notAfter text,  notBefore text, dateRevoke text,  state text )}
+	    update
     	    certdb eval {create table certDBRev( ckaID text primary key )}
+	    update
     	    certdb eval {create table certDBNew( ckaID text primary key )}
+	    update
 
 	    certdb eval {create table reqDB (ckaID text primary key, nick  text,  sernum text, subject text, type text, datereq text, status text, reqpem text, pkcs7 text)}
+	    update
 	    certdb eval {create table reqDBAr (ckaID text primary key, nick  text,  sernum text, subject text, type text, datereq text, status text, reqpem text, pkcs7 text)}
+	    update
     	    certdb eval {create table crlDB(ID integer primary key autoincrement, signtype text, issuer text, publishdate text, nextdate text, crlpem text)}
-destroy .cm.topwait
+	    set tt1 [clock seconds]
+	    updatewait $tt1
+	    variable ttw
+	    set ttw 0
+	    vwait ttw
+	    after cancel updatewait
+	    destroy .cm.topwait
 #База для ключей
 if { 0} {
 	    set filedb [file join $db(dir) "keydb.cadb"]
@@ -14507,7 +14528,9 @@ proc cmd::ExitDB {} {
     global certdb
     global keydb
     catch {certdb close}
-#    file delete -force  $lirssl_static; 
+    if {[file exists $lirssl_static]} {
+	file delete -force  $lirssl_static
+    }
 #    catch {keydb close}
     exit 0
 }
