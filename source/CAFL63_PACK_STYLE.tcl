@@ -5,6 +5,7 @@ package require cmdline
 package require csv
 package require base64
 package require http
+package require msgcat
 
 global typesys
 set typesys [tk windowingsystem]
@@ -49,11 +50,6 @@ if {$argc > 0 } {
 	set raca 1
     }
 }
-if {$typesys == "x11" } {
-    catch {tk_getOpenFile foo bar}
-    set ::tk::dialog::file::showHiddenVar 0
-    set ::tk::dialog::file::showHiddenBtn 1
-}
 option add *Dialog.msg.wrapLength 6i
 option add *Dialog.dtl.wrapLength 6i
 
@@ -61,6 +57,14 @@ global myDir
 set mydir [file dirname [info script]]
 set dd [encoding dirs]
 encoding dirs [list $dd $mydir]
+msgcat::mclocale ru
+if {$typesys == "x11" } {
+    ::msgcat::mcload [file join [file dirname [info script]] $mydir]
+    catch {tk_getOpenFile foo bar}
+    set ::tk::dialog::file::showHiddenVar 0
+    set ::tk::dialog::file::showHiddenBtn 1
+}
+
 set myDir $mydir
 set ::aquamenu ""
 ###############
@@ -6476,7 +6480,6 @@ proc cagui::FileDialog {args} {
 
 proc cagui::FileEntry {w args} {
     ttk::style map My1.TButton -background [list disabled #d9d9d9  active #00ff7f] -foreground [list disabled #a3a3a3] -relief [list {pressed !disabled} sunken]
-#    ttk::style configure My1.TButton -borderwidth 2  -highlightbackground #39b5da
 
     set validopts {-dialogtype -width -defaultextension -filetypes -title -variable -initialdir -command -parent}
     set passingopts {-dialogtype -defaultextension -filetypes -title -variable -initialdir -command -parent}
@@ -6520,17 +6523,11 @@ proc cagui::FileEntry {w args} {
 #puts "buttoncommand : $buttoncommand"
     
     frame $w -background white
-    #label $w.label -text $opts(-text)
     eval $entrycommand
     button $w.but -image icon_openfile_18x16  -compound center -command $buttoncommand -bd 0 -background white -activebackground white -highlightthickness 0
-#    ttk::button $w.but -text "..." -command $buttoncommand -style My1.TButton -width 1
 
-#    grid $w.entry -row 0 -column 0 -sticky nwse 
-#    grid $w.but -row 0 -column 1 -sticky  ws
-#    grid columnconfigure $w 1 -weight 1
     pack $w.entry $w.but -side right -ipadx 1 -fill none
     pack $w.entry  -side left -ipadx 1 -fill x -expand 1
-#    $w.entry configure -background white -highlightbackground #39b5da
 
 }
 
@@ -6541,13 +6538,13 @@ proc cagui::ProgressWindow_Create {w {title {Running ...}}  {message {}}} {
     set cancelexport 0
     
     catch "destroy $w"
-    toplevel $w
-    $w configure -background #39b5da
+    frame $w -width 400 -height 100  -relief flat -bd 0 -highlightbackground chocolate -highlightthickness 3
+    $w configure -background #3daee9
     
-    frame $w.f -background #e0e0da
-    frame $w.bt -background #e0e0da
-    pack $w.f -expand 1 -fill both -padx 2 -pady 2 
-    pack $w.bt -expand 1 -fill both -padx 2 -pady {0 2} 
+    frame $w.f -background white
+    frame $w.bt -background white
+    pack $w.f -expand 1 -fill both -padx 3 -pady 3
+    pack $w.bt -expand 1 -fill both -padx 3 -pady {0 3} 
 
     ttk::button $w.bt.cancel -text "Отмена" -command {global cancelexport; set cancelexport 1}
     pack $w.bt.cancel -side right -padx 5 -pady 5
@@ -6567,12 +6564,10 @@ proc cagui::ProgressWindow_Create {w {title {Running ...}}  {message {}}} {
     grid rowconfigure    $w.f 1 -weight 0
     grid rowconfigure    $w.f 2 -weight 0
     grid rowconfigure    $w.f 3 -weight 1
-    wm title $w "$title"
-    wm iconphoto $w iconCert_32x32
-    wm minsize $w 400 100
-    wm geometry $w +100+100
+
+    place $w -in .cm.mainfr.ff.notbok -x 215 -y 60  -relwidth 0.5
+    raise $w
     update
-    center2window "." $w
 }
 
 proc cagui::ProgressWindow_SetStatus {w message {progress {}} } {
@@ -6589,6 +6584,7 @@ proc cagui::ProgressWindow_SetStatus {w message {progress {}} } {
             set countfile 10
         }
     }
+    update
 }
 
 # Copyright (c) 2001, Bryan Oakley
@@ -10093,8 +10089,7 @@ bind $c.e2 <Key-Return> {tkwizard::cmd Finish .cm.opendb}
 		set df(configReq) $vals(configReq)
 	    }}]
 	} {
-        	tk_messageBox -title "Выбор каталога БД УЦ" -icon error -parent .cm
-        	-message "База данных $filedb испорчена.\n"
+        	tk_messageBox -title "Выбор каталога БД УЦ" -icon error -parent .cm -message "База данных $filedb испорчена.\n"
         	return -code break;        
 	}
 	set db(dir) $wizData(dir_ca)
@@ -14047,7 +14042,6 @@ proc page2com3 {} {
     set initf [file join $dir certAllDB.dump]
     set file [tk_getSaveFile -title "SQL-дамп таблицы всех сертификатов" -filetypes $typedb -initialdir $dir -initialfile $initf -parent .cm]
     if {$file == ""} {
-            tk_messageBox -title "SQL-дамп таблицы всех сертификатов" -icon error -message "Файл не выбран.\n" -parent .cm
             return
     }
 ################################
@@ -14103,7 +14097,7 @@ proc page2com3 {} {
 	if {$cancelexport == 1 } {
 	    tk_messageBox -title "Дамп таблицы сертификатов" -icon info -message "Экспорт прерван.\n
 Было экспортировано $i сертификатов.\n
-SQL-дамп сертификатов сохранены в\n$file" -parent  $progr
+SQL-дамп сертификатов сохранены в\n$file" -parent  .cm
 	    incr countfile
 	    break
 	}
@@ -14112,7 +14106,7 @@ SQL-дамп сертификатов сохранены в\n$file" -parent  $pr
     close $ff
     cagui::ProgressWindow_SetStatus $progr "Выгружено $i сертификат(ов)" $countfile
     update
-    tk_messageBox -title "Дамп таблицы сертификатов" -icon info -message "SQL-дамп сертификатов сохранен в\n$file" -parent $progr
+    tk_messageBox -title "Дамп таблицы сертификатов" -icon info -message "SQL-дамп сертификатов сохранен в\n$file" -parent .cm
     destroy $progr
     catch "destroy $progr"
 }
@@ -14130,10 +14124,8 @@ proc page2com4 {} {
     set initf [file join $dir certDBNew.dump]
     set file [tk_getSaveFile -title "Выгрузка новых сертификатов в SQL-дамп" -filetypes $typedb -initialdir $dir -initialfile $initf -parent .cm]
     if {$file == ""} {
-            tk_messageBox -title "Выгрузка новых сертификатов в SQL-дамр" -icon error -message "Файл не выбран.\n" -parent .cm
             return
     }
-#    set tables [certdb eval {SELECT name FROM sqlite_master WHERE type='table'}]
     set tab1 [certdb onecolumn {SELECT sql FROM sqlite_master WHERE name="certDB"}]
     set tab1 [string trimright $tab1 ")"]
     set i [string first "(" $tab1] 
@@ -14181,7 +14173,7 @@ proc page2com4 {} {
 	    if {$cancelexport == 1 } {
 		tk_messageBox -title "SQL-дамп новых сертификатов" -icon info -message "Экспорт прерван.\n
 Было экспортировано $i сертификатов.\n
-SQL-дамп сертификатов сохранены в\n$file" -parent .cm.progress
+SQL-дамп сертификатов сохранены в\n$file" -parent .cm
 		incr countfile
 		break
 	    }
@@ -14191,7 +14183,7 @@ SQL-дамп сертификатов сохранены в\n$file" -parent .cm.
     close $ff
     cagui::ProgressWindow_SetStatus .cm.progress "SQL-дамп для $i сертификатов создан " $countfile
     update
-    tk_messageBox -title "SQL-дамп новых сертификатов" -icon info -message "SQL-дамп сертификатов сохранен в\n$file" -parent .cm.progress
+    tk_messageBox -title "SQL-дамп новых сертификатов" -icon info -message "SQL-дамп сертификатов сохранен в\n$file" -parent .cm
     catch "destroy .cm.progress"
 }
 

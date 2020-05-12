@@ -7,7 +7,7 @@ fi
 rm -f tclpkcs11.p11
 cp -f tclpkcs11_$1.so ./tclpkcs11.p11
 echo $a
-./tclexecomp_v.1.0.4.linux64 CAFL63_PACK_STYLE.tcl tkfe.tcl breeze.tcl cert2text.tcl alloids.tcl ascii.enc tclpkcs11.p11 orlov_250x339.png -forcewrap  -w ./tclexecomp_v.1.0.4.linux$1 -o CAFL63_linux$1_v1.0.4
+./tclexecomp_v.1.0.4.linux64 CAFL63_PACK_STYLE.tcl tkfe.tcl breeze.tcl cert2text.tcl alloids.tcl ru.msg ascii.enc tclpkcs11.p11 orlov_250x339.png -forcewrap  -w ./tclexecomp_v.1.0.4.linux$1 -o CAFL63_linux$1_v1.0.4
 chmod 755 CAFL63_linux$1_v1.0.4
 rm -f tclpkcs11.p11
 
