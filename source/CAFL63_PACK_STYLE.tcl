@@ -11446,32 +11446,6 @@ proc center2window {w parent} {
 
 proc About {w} {
     set title {О приложении CAFL63}
-    set content {
-	Copyright (c) 2017-2020 Vladimir Orlov 
-	<vorlov@lissi.ru>
-	This program comes with ABSOLUTELY NO WARRANTY.
-	This is free software, and you are welcome 
-	to redistribute it under certain conditions. 
-	See the file COPYING for details.\n
-	
-        Программое обеспечение УЦ ФЗ-63
-        написано Орловым В.Н. 
-        УЦ ФЗ-63 функционирует на
-        ОС Linux, Ms Windows, Android и др.
-        Удостоверяющий Центр разрабатывался с учетом 
-        требований ФЗ-63 и регулятора.
-        
-        Это программное обеспечение доступно в терминах
-        GNU General Public License.
-        
-        Загрузить дистрибуты можно здесь
-        http://soft.lissi.ru/
-        
-        Если возникнут вопросы, пожелание,
-        желание оказать помощь, пишите
-        vorlov@lissi.ru
-    }
-    
     catch {destroy $w}
     toplevel $w -bg skyblue -bd 3 -width 530 -height 480
     wm title $w $title
@@ -12765,41 +12739,6 @@ proc debug::msg {msg {lvl 1}} {
     }
 }
 
-proc Dialog_ShowText {w title content } {
-    
-    debug::msg "Dialog_ShowText $w $title $content"
-    
-    global input_values
-    global dialog_labels
-    array unset input_values
-    array set input_values {}
-    
-    catch {destroy $w}
-    toplevel $w
-    wm title $w $title
-    wm iconphoto $w iconCert_32x32
-    wm geometry $w +100+100
-
-    text $w.text -width 60 -height 10
-    frame $w.butt
-    pack $w.text
-    pack $w.butt -expand 1 -fill both
-    button $w.butt.ok -text "Ok" -command "set input_values(exit) ok; destroy $w"
-    button $w.butt.cancel -text "Отмена" -command "set input_values(exit) cancel; destroy $w"
-    pack $w.butt.ok $w.butt.cancel -side left -expand 1 -fill both
-    
-    $w.text insert end $content
-    $w.text configure -state disabled
-    
-    # do not allow closing via [x] button
-    wm protocol $w WM_DELETE_WINDOW ";"
-    
-    # now get input
-    grab set $w
-    tkwait window $w
-    return $input_values(exit)
-}
-
 proc Dialog_ShowCertificate {filename} {
     
     set crt_fn $filename
@@ -12826,15 +12765,17 @@ proc Dialog_ShowCertificateInfo {w title fieldvalues text certhex crtstatus} {
     array set input_values {}
     
     catch {destroy $w}
-    toplevel $w -bd 3  -relief flat -background #39b5da -padx 0 -pady 0 
+    toplevel $w -bd 3  -relief flat -background #39b5da -padx 0 -pady 0
+    wm minsize $w 550 400
+    update
+    center2window  . $w
     if {$title == "ViewCA"} {
 	wm title $w "Просмотр корневого сертификата УЦ"
     } else {
 	wm title $w $title
     }
-    wm geometry $w +100+100
     wm iconphoto $w iconCert_32x32
-    wm minsize $w 550 400
+    
 
     set w1 $w
     frame $w.mainfr -relief flat -background #eff0f1 -bd 0
@@ -13014,7 +12955,7 @@ proc Dialog_ShowCertificateInfo {w title fieldvalues text certhex crtstatus} {
     tkwait window $w1
     grab release $w
     tk busy forget .cm
-    menu_enable
+    catch {menu_enable}
 }
 proc Dialog_ShowRequestInfo {w title fieldvalues text addbut fileimport} {
     
@@ -13028,10 +12969,10 @@ proc Dialog_ShowRequestInfo {w title fieldvalues text addbut fileimport} {
     catch {destroy $w}
     toplevel $w -bd 3  -relief flat -background #39b5da -padx 0 -pady 0 
     wm title $w $title
-    wm geometry $w +100+100
     wm iconphoto $w iconCert_32x32
-#    $w configure -background #e0e0da
     wm minsize $w 550 400
+    update
+    center2window  . $w
 
     set w1 $w
     frame $w.mainfr -relief flat -background #eff0f1 -bd 0 -padx 0 -pady 0
@@ -13244,10 +13185,12 @@ proc Dialog_ShowCRLInfo {w title fieldvalues text fileimport} {
     catch {destroy $w}
     toplevel $w -bd 3  -relief flat -background #39b5da -padx 0 -pady 0 
     wm title $w $title
-    wm geometry $w +100+100
     wm iconphoto $w iconCert_32x32
     wm minsize $w 550 400
-
+#Центрируем окно
+    update
+    center2window  . $w
+    
     set w1 $w
     frame $w.mainfr -relief flat -background #eff0f1 -bd 0
 
@@ -14247,7 +14190,6 @@ proc exportCerts {type} {
 	    
 	    set file [tk_chooseDirectory -title $title  -initialdir $dir  -parent .cm]
 	    if {$file == ""} {
-        	tk_messageBox -title "Экспорт корневого сертификата" -icon error -message "Каталог не выбран.\n" -parent .cm
         	return
 	    }
 	    set fileca [file join $file $initf]
@@ -14264,7 +14206,6 @@ proc exportCerts {type} {
 #    puts "Export New: $dir"
     set file [tk_chooseDirectory -title $title  -initialdir $dir  -parent .cm]
     if {$file == ""} {
-            tk_messageBox -title "$pubtit" -icon error -message "Каталог не выбран.\n" -parent .cm
             return
     }
     set countfile 0
