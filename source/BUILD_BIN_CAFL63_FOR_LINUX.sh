@@ -1,4 +1,10 @@
 echo "./BUILD_BIN_CAFL63_FOR_LIN_COPY.sh 32|64"
+bb=$1
+if [ ${bb:=0 } -eq 0   ]
+    then 
+	echo "Bad type 32|64"
+	exit 1
+fi
 if [ $1 -ne 64  -a $1 -ne 32 ]
     then 
 	echo "Bad type 32|64"

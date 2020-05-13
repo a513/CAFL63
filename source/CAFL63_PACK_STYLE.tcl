@@ -737,6 +737,7 @@ proc menu_enable {} {
 proc setTempDir {} {
   global myDir
   global lirssl_static
+  set ::calog "ca.log"
   switch -- $::tcl_platform(platform) {
     "windows"        { 
 	set tempDir $::env(TEMP) 
@@ -757,6 +758,7 @@ proc setTempDir {} {
         set tclpkcs11 [file join $myDir tclpkcs11.p11]
     }
   }
+  set ::calog [file join $tempDir $::calog]
   set alloids [file join $myDir alloids.tcl]
   source $alloids
   load $tclpkcs11 Tclpkcs11
@@ -11369,7 +11371,6 @@ proc contentabout {w} {
   $w.text insert end \n
 
   # Create bindings for tags.
-  # d3 d4 d5 d6
   array set url []
   set url(d1) "http://soft.lissi.ru/ls_product/skzi/PKCS11"
   set url(d2) "http://museum.lissi-crypto.ru"
@@ -11377,8 +11378,8 @@ proc contentabout {w} {
   set url(d4) "https://github.com/a513/CAFL63/raw/master/distr/CAFL63_linux32.tar.bz2"
   set url(d5) "https://github.com/a513/CAFL63/raw/master/distr/CAFL63_linux64.tar.bz2"
   set url(d6) "https://github.com/a513/CAFL63/raw/master/distr/CAFL63_mac.tar.bz2"
-  set url(d7) "https://github.com/a513/CAFL63/raw/master/distr/CAFL63_win32.exe"
-  set url(d8) "https://github.com/a513/CAFL63/raw/master/distr/CAFL63_win64.exe"
+  set url(d7) "https://github.com/a513/CAFL63/raw/master/distr/CAFL63_setup_win32.exe"
+  set url(d8) "https://github.com/a513/CAFL63/raw/master/distr/CAFL63_setup_win64.exe"
   set url(d9) "https://github.com/a513/CAFL63"
   set url(d10) "https://github.com/a513/TclPKCS11"
   set url(d11) "http://soft.lissi.ru"
@@ -11401,8 +11402,8 @@ proc contentabout {w} {
   eval "$w.text tag bind d4 <1> {readdistr https://github.com/a513/CAFL63/raw/master/distr/CAFL63_linux32.tar.bz2 $w}"
   eval "$w.text tag bind d5 <1> {readdistr https://github.com/a513/CAFL63/raw/master/distr/CAFL63_linux64.tar.bz2 $w}"
   eval "$w.text tag bind d6 <1> {readdistr https://github.com/a513/CAFL63/raw/master/distr/CAFL63_mac.tar.bz2 $w}"
-  eval "$w.text tag bind d7 <1> {readdistr https://github.com/a513/CAFL63/raw/master/distr/CAFL63_win32.exe $w}"
-  eval "$w.text tag bind d8 <1> {readdistr https://github.com/a513/CAFL63/raw/master/distr/CAFL63_win64.exe $w}"
+  eval "$w.text tag bind d7 <1> {readdistr https://github.com/a513/CAFL63/raw/master/distr/CAFL63_setup_win32.exe $w}"
+  eval "$w.text tag bind d8 <1> {readdistr https://github.com/a513/CAFL63/raw/master/distr/CAFL63_setup_win64.exe $w}"
   $w.text tag bind d9 <1> {openURL "https://github.com/a513/CAFL63"}
   eval "$w.text tag bind d15 <1> {readdistr https://github.com/a513/CAFL63/raw/master/distr/AndroWishApp-debug.apk $w}"
   $w.text tag bind d10 <1> {openURL "https://github.com/a513/TclPKCS11"}
@@ -11514,7 +11515,6 @@ proc About {w} {
 }
 
 proc CreateMenu {w label def} {
-    
     global tcl_platform
     global config
     
@@ -11523,25 +11523,19 @@ proc CreateMenu {w label def} {
     if { [string equal $tcl_platform(platform) windows] } {
         $w.$label add cascade -label System -menu $w.$label.system
         menu $w.$label.system -tearoff 0
-                
         # Add the 'Show Log' item to the system menu
         $w.$label.system add checkbutton \
                 -label {Show Message Log} \
                 -variable ::Log::mapped(.log) \
                 -command "::Log::WindowToggle .log"
-            
     }
-        
 }
 
 proc CreateMenuAqua {w label def} {
-    
     global tcl_platform
     global config
     
 #    MakeMenu $w $label $def
-
-
     catch {destroy $w.menumac}
 
     frame $w.label -height 26 -bd 2 -relief groove -bg #e0dfde
@@ -11551,7 +11545,6 @@ proc CreateMenuAqua {w label def} {
 }
 
 proc  MakeMenu {w label def} {
-    
     catch {destroy $w.$label}
 
     menu $w.$label -tearoff 0 -relief flat -bd 0 -bg #eff0f1
@@ -11612,7 +11605,6 @@ proc  MakeMenuAqua {w label def} {
 # puts "command: menu $w.$label -tearoff 0 ::aquamenu=$::aquamenu"
     
     foreach {wg text content} $def {
-#tk_messageBox -title "FOREACH" -icon info -message "wg=$wg text=$text" -detail "$content" 
        	if {[string index $wg 0] == "#"} {
     	       # ignore
         } elseif {[string index $wg 0] == "-"} {
@@ -11632,14 +11624,11 @@ proc  MakeMenuAqua {w label def} {
 	    ttk::button $w.$wg -text $text -style MenuAqua.TButton
 	    pack $w.$wg -side left -fill y 
 	    bind $w.$wg <Button-1> {showContextMenuAqua %W %x %y %X %Y }
-#	    bind $w.$wg <Enter> {showContextMenuAqua %W %x %y %X %Y }
-#	    bind $w.$wg <Leave> {showContextMenuAquaForget %W %x %y %X %Y}
        	    MakeMenuAqua $w.$label $wg $content
        	}
     }  
 }
 
-#    {cn "Common Name" 170}
 set CertListBox { {#0 "NickName" 120}
     {sort0 "NikName" 0 }
     {serial "Serial" 80 }
@@ -13987,7 +13976,7 @@ proc page2com3 {} {
 	{"Формат SQL-дампа DB"    *.dump}
 	{"Любой файл"  *}
     }
-    set initf [file join $dir certAllDB.dump]
+    set initf "certAllDB.dump"
     set file [tk_getSaveFile -title "SQL-дамп таблицы всех сертификатов" -filetypes $typedb -initialdir $dir -initialfile $initf -parent .cm]
     if {$file == ""} {
             return
@@ -14069,7 +14058,7 @@ proc page2com4 {} {
 	{"Формат dump"    *.dump}
 	{"Любой файл"  *}
     }
-    set initf [file join $dir certDBNew.dump]
+    set initf "certDBNew.dump"
     set file [tk_getSaveFile -title "Выгрузка новых сертификатов в SQL-дамп" -filetypes $typedb -initialdir $dir -initialfile $initf -parent .cm]
     if {$file == ""} {
             return
@@ -14460,7 +14449,6 @@ proc cmd::ShowHelp {url} {
     eval exec [auto_execok start] [list "$url"] &
 }
 
-
 proc cmd::ExitDB {} {
     global lirssl_static
     global certdb
@@ -14478,20 +14466,16 @@ if {[lindex $argv 0] == "-debug"} {
     set debug::level 1
 }
 
-
-
 Log::CreateWindow .log
 Log::ToWindow .log
-Log::ToFile "ca.log"
+#Log::ToFile "ca.log"
+Log::ToFile $::calog
 interp alias {} log {} ::Log::LogMessage
 wm protocol . WM_DELETE_WINDOW "Log::Cleanup; destroy ."
 
-    
 debug::msg "startup : $argv0 $argv"
 
-
 if {[lindex $argv 0] == "-debug"} {
-
     set config(debug) 1
     set debug::level 1
 }
