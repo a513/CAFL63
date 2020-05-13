@@ -120,30 +120,15 @@ namespace eval FE {
     1BBABG8bOXbcGAgAOw==
   }
 
-  image create photo icondir_OLD -data {
-    R0lGODlhEAAQAMYAAAAAAFhYWP+oWP/cqPLy8P39+/z8+vHx8vz8+/f3+O7u8N3d3vX19e/v8Ojo6eLi4dXV1vT09O7u7ufn5+Hh4Nra29TU1M3NzcbGxby8u7Cwru3t
-    7efn6N/f39vb29PT1MvLzMXFxcHBwbu7u7Gxsufn6d7e39fX2dDQ0crKy8PDwr29vbm5urOzs6ioqN7e4NfX2M/P0MnJycLCw7y8vLW1tLCwsaurq6Kios3NzsfHxsDA
-    v62trKmpqKSkpJubm7a2t7KysqWlpKKioZ2dnZWVlKCgoJ2dnpqampmZmZKSkJKSkZWVk42NjP//////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////yH5BAEKAH8ALAAAAAAQABAAAAeYgH9/AAEAgoeIh4QCAwCGiYgABAEBjI6XiQAFBgeUjAMDAo+CmggJCguVoAMBkQgMDQ4PEJSeowAREhMUFRYX
-    GBkaAAKKGxwdHh8gISIjJMOKJSYnKCkqKywtLtCkLzAxMjM0NTY3ONyDADk6O9k8PT4/6KQAQEE3QkNERfOKAEZHkCRR0i8SgCVMCIoaBclRk2GOIGXCFAgAOw==
-  }
-  image create photo icondir_NEW -data {
-R0lGODlhFQAQAOMLAHGmzpm51pm615u715+916bB2rbL37bL4MnY5cnY5vb29u/w
-8e/w8e/w8e/w8e/w8SH+EUNyZWF0ZWQgd2l0aCBHSU1QACwAAAAAFQAQAAAENlDJ
-SaslIOthe9BgYYxkaSQfqK6akLJw5sb0TMP2veY6yPeyFzA49AmHP2CyJ0AcntCo
-NJqIAAA7
-  }
   image create photo icondir -data {
-  iVBORw0KGgoAAAANSUhEUgAAABIAAAAQCAYAAAAbBi9cAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4wYXCDgNebfI9AAAAgZJ
-  REFUOMuNkz9PFUEUxX/3zuxbQAlSkGhhaWEwRhNbY6Extmhi7Kz5CH4P/RZY2FnYEG20sKOSaExEBNTn44+P3Tdzr8U8Hw8k4G0mszvn5PzO7MrrO/PcfLXCSfPm3pXr
-  9bnwLtQS8SMvFZqttCwAbxeuznY/9BfcCQcnisL3SDPzE4/mF8/f7cxViEp5bg6tE6ciK0/XiADd1f7Da08uPtOACoK7I5WgAFGQCZE4HQ6Fsex4MthLuHkxcqeuJlVj
-  LSK1IB1BRJApxRsjnlXcIXrA1BGHrJABQkkYAVK3az64gHcEiQEUpFLUgQ5IE1B1jIRkcBfwDA4SO2AQt148eD59+fYNjb8LvgqFCeRIqYfqc8j9lv7Hl0gUos7N3a8v
-  LY6dEP53rPeN9v3SAVqZ3eFWjokwFgMbWw0VGTfKuPdAAhBOSZYYadgGP2S0A/KjiD2AnIDnBmLFUH7hB7dmwAbwtRhJOAZr1ApIGqZNwC4iERgQsQxs4qwNseQELB8Z
-  iifE+5AFHCJmwHfUNgDFVE8xy6g5WAJaDMXxv2hdaDYhhvIRov/6+BANIDlYhpRHNUSJWjaxLSVbUbkabo7j5Uc1QV2LLghEJ2TDg2KND+L+6pfl9fWlW4PeLm030/40
-  9rcb0p7R9MCahJ6pqCedaiZQz1R0ZiOdWSVMKe3nwafBjj3+A1B95HRZw8dhAAAAAElFTkSuQmCC
+    iVBORw0KGgoAAAANSUhEUgAAABIAAAAQCAYAAAAbBi9cAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4wYXCDgNebfI9AAAAgZJ
+    REFUOMuNkz9PFUEUxX/3zuxbQAlSkGhhaWEwRhNbY6Extmhi7Kz5CH4P/RZY2FnYEG20sKOSaExEBNTn44+P3Tdzr8U8Hw8k4G0mszvn5PzO7MrrO/PcfLXCSfPm3pXr
+    9bnwLtQS8SMvFZqttCwAbxeuznY/9BfcCQcnisL3SDPzE4/mF8/f7cxViEp5bg6tE6ciK0/XiADd1f7Da08uPtOACoK7I5WgAFGQCZE4HQ6Fsex4MthLuHkxcqeuJlVj
+    LSK1IB1BRJApxRsjnlXcIXrA1BGHrJABQkkYAVK3az64gHcEiQEUpFLUgQ5IE1B1jIRkcBfwDA4SO2AQt148eD59+fYNjb8LvgqFCeRIqYfqc8j9lv7Hl0gUos7N3a8v
+    LY6dEP53rPeN9v3SAVqZ3eFWjokwFgMbWw0VGTfKuPdAAhBOSZYYadgGP2S0A/KjiD2AnIDnBmLFUH7hB7dmwAbwtRhJOAZr1ApIGqZNwC4iERgQsQxs4qwNseQELB8Z
+    iifE+5AFHCJmwHfUNgDFVE8xy6g5WAJaDMXxv2hdaDYhhvIRov/6+BANIDlYhpRHNUSJWjaxLSVbUbkabo7j5Uc1QV2LLghEJ2TDg2KND+L+6pfl9fWlW4PeLm030/40
+    9rcb0p7R9MCahJ6pqCedaiZQz1R0ZiOdWSVMKe3nwafBjj3+A1B95HRZw8dhAAAAAElFTkSuQmCC
   }
-
   image create photo icondirup -data {
     R0lGODlhEAAQAKUAABJNbwoSHxVUdIGeuhdYeggeMRlKat3v+BOQtBVWeAcXKBtLav38/VnD2jzX4RVaehtPb3HR4Bmzzg6gxUjf6RKQtRNUdgcYKhJMbeLw+Q6Xvxyi
     wxBTdQYQHSA3TwEDBAAAABFHYJ3e7iK60RWavA9dfgABAc3r9hGXuUPV3iKUsQomO/36/SqYswonOyzH1ReOrIDC21isxRSDnwoZKQgcLQccLP//////////////////
@@ -152,18 +137,11 @@ NJqIAAA7
   }
 
   image create photo iconfile -data {
-R0lGODlhEAAQAKU7AACFvQCGvQCGvwCHvQCHvwCQyACU0gCU1ACU1wCW1ACW1wCY2ACZ1wCb1QCb3QCc1gCc2ACc2gCd2wCe1gCe2ACg1wCo6ACp7ACu7gCu8ACv7wCv
-8gCw8ACw8zep2Dqp2C+35DG55jO86DO86kPC8nC31HC31nO31Ha31na51nO61nO613O62UHH92682Xa61na62UTH93m62TrR/3nH5oXO7YfY94XZ+Yfb+4rb+4re++/w
-8e/w8e/w8e/w8e/w8SH+SUNvcHlyaWdodCBJTkNPUlMgR21iSCAod3d3Lmljb25leHBlcmllbmNlLmNvbSkgLSBVbmxpY2Vuc2VkIHByZXZpZXcgaW1hZ2UAIfkEAQoA
-PwAsAAAAABAAEAAABo3A369BgRiND6FSSYnpnrEOJbRUTjiZbLYjAlV/kxZu3MpwZiPqMjzGtTgczEIQWGO1nE3EoACsYzmBgTQnMB8DdngWBgcHCYhWYmM2KyYqLB6Q
-Qmw4Ny4lKpeZdhwaEoyNjppggDUnL7AvhqtXF6ipqksUJCkoMri5ShUOBwgICsjIDARLBQAE0NHSQkEAOw==
-  }
-
-
-  image create photo iconfile_NEW -data {
-R0lGODlhDgAQAIQWAI3J+ZDK+ZrO+ZvP+qPS+rXc+7vc+7zd+77d+8Tj/M7l/M/l/NLn/Nbt/eHz/u/2/vn8//z9//z+//7+//7//////+/w8e/w8e/w8e/w8e/w8e/w
-8e/w8e/w8e/w8e/w8SH+EUNyZWF0ZWQgd2l0aCBHSU1QACH5BAEKAB8ALAAAAAAOABAAAAVBYEVBZAlNVZo+QesKR6RWrNsSjSGptU04DYSMZmsNEokCY1UsLphN15MY
-bU170WvVCq1qt19vN7sCmM9oxWzNDgEAOw==
+    R0lGODlhEAAQAKU7AACFvQCGvQCGvwCHvQCHvwCQyACU0gCU1ACU1wCW1ACW1wCY2ACZ1wCb1QCb3QCc1gCc2ACc2gCd2wCe1gCe2ACg1wCo6ACp7ACu7gCu8ACv7wCv
+    8gCw8ACw8zep2Dqp2C+35DG55jO86DO86kPC8nC31HC31nO31Ha31na51nO61nO613O62UHH92682Xa61na62UTH93m62TrR/3nH5oXO7YfY94XZ+Yfb+4rb+4re++/w
+    8e/w8e/w8e/w8e/w8SH+SUNvcHlyaWdodCBJTkNPUlMgR21iSCAod3d3Lmljb25leHBlcmllbmNlLmNvbSkgLSBVbmxpY2Vuc2VkIHByZXZpZXcgaW1hZ2UAIfkEAQoA
+    PwAsAAAAABAAEAAABo3A369BgRiND6FSSYnpnrEOJbRUTjiZbLYjAlV/kxZu3MpwZiPqMjzGtTgczEIQWGO1nE3EoACsYzmBgTQnMB8DdngWBgcHCYhWYmM2KyYqLB6Q
+    Qmw4Ny4lKpeZdhwaEoyNjppggDUnL7AvhqtXF6ipqksUJCkoMri5ShUOBwgICsjIDARLBQAE0NHSQkEAOw==
   }
   image create photo iconfiledenied -data {
     R0lGODlhEAAQAMZNAO0AAPEAAPADA/MSEs8fH/IWFs0uLtgvMOA2NuE3N986ROE9Pp9QYMdMekF52N9ZdOxbXEeD6FCC1VGC1UaE6+5cXkKF9EOG9ESG9EWH9EaI9EeI
@@ -445,17 +423,8 @@ bU170WvVCq1qt19vN7sCmM9oxWzNDgEAOw==
 #Главное окно неизменяемое на время работы проводника
       frame $w -bg white
     } else {
-      toplevel $w -bd 2  -relief groove -bg white
-      if {$typefb == "dir"} {
-        wm title $w [mc "Выберите каталог"]
-        wm iconphoto $w icondir
-      } else {
-        wm title $w [mc "Выберите файл"]
-        wm iconphoto $w iconfile
-      }
       set tw $::scrwidth
       set th [expr $::scrheight - 100]
-      wm minsize $w $::scrwidth  [expr $::scrheight - 100]
       set geometr $tw
       append geometr "x"
       append geometr $th
@@ -489,7 +458,17 @@ bU170WvVCq1qt19vN7sCmM9oxWzNDgEAOw==
 
         }
       }
+      toplevel $w -bd 2  -relief groove -bg white
       wm geometry $w $geometr
+#Окно не может перекрываться (yes)
+      wm attributes $w -topmost yes   ;# stays on top - needed for Linux
+      if {$typefb == "dir"} {
+        wm title $w [mc "Выберите каталог"]
+        wm iconphoto $w icondir
+      } else {
+        wm title $w [mc "Выберите файл"]
+        wm iconphoto $w iconfile
+      }
       #Убрать обрамление
       #	wm overrideredirect $w 1
     }
@@ -631,7 +610,7 @@ bU170WvVCq1qt19vN7sCmM9oxWzNDgEAOw==
     set tdir [file dirname $tdir ]
     set rr [file readable "$tdir"]
     if {$rr == 0} {
-      tk_messageBox -title "Просмотр папки" -icon info -message "Каталог не доступен:\n$tdir"  -parent $w
+      tk_messageBox -title "Просмотр папки" -icon info -message "Каталог не доступен:\n$tdir" -parent $w
       return
     }
     $w.seldir.entdir configure -state normal
@@ -774,7 +753,7 @@ bU170WvVCq1qt19vN7sCmM9oxWzNDgEAOw==
 
     set rr [file readable "$path"]
     if {$rr == 0} {
-      tk_messageBox -title "Просмотр папки" -icon info -message "Каталог не доступен:\n$path  -parent $w"
+      tk_messageBox -title "Просмотр папки" -icon info -message "Каталог не доступен:\n$path -parent ."
       set ::tekPATH $path
       return
     }
@@ -785,8 +764,6 @@ bU170WvVCq1qt19vN7sCmM9oxWzNDgEAOw==
       set ptr [string first "/.. " $directory_list1]
       if {$ptr != -1} {
         append directory_list [string range $directory_list1 [expr $ptr + 3] end ]
-      } else {
-        append directory_list " $directory_list1"
       }
     }
     set ::tekPATH $path

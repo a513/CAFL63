@@ -9,6 +9,12 @@ package require msgcat
 
 global typesys
 set typesys [tk windowingsystem]
+#Главное окно
+if {$typesys == "win32" } {
+    wm geometry . 850x595+300+105
+} else {
+    wm geometry . 850x575+300+105
+}
 global home
 set ::yearcert 1
 set home $env(HOME) 
@@ -11406,18 +11412,16 @@ proc contentabout {w} {
   $w.text tag bind d14 <1> {openURL "https://www.androwish.org"}
 }
 
-proc center2window {w parent} {
+proc rect2window {w tw th} {
 #Считываем размеры главного окна в пикселях
     set rw [winfo screenwidth $w]
     set rh [winfo screenheight $w]
-    set tw [winfo width $parent]
-    set th [winfo height $parent]
-      set geometr $tw
-      append geometr "x"
-      append geometr $th
-      if { $rw <= $rh } {
-         append geometr "+0+0"
-      } else {
+    set geometr $tw
+    append geometr "x"
+    append geometr $th
+    if { $rw <= $rh } {
+       append geometr "+0+0"
+    } else {
 #Координаты главного окна
 	set rgeom [wm geometry $w]
 	set rgf [string first "x" $rgeom]
@@ -11427,7 +11431,7 @@ proc center2window {w parent} {
 	set rg1 [string range $rgeom $rg+1 end]
 	if {$rw <= $tw} {
     	    append geometr +$rg1
-        } else {
+	} else {
 	    set off [expr ($rw - $tw) / 2]
 	    set rg2 [string first "+" $rg1]
 	    incr rg
@@ -11440,20 +11444,22 @@ proc center2window {w parent} {
     	    append geometr "+$offw1+$offw2"
 
         }
-      }
-      wm geometry $parent $geometr
+    }
+#Возвращаем геометрию дляцентрируемого окна
+    return $geometr
 }
 
 proc About {w} {
     set title {О приложении CAFL63}
     catch {destroy $w}
-    toplevel $w -bg skyblue -bd 3 -width 530 -height 480
+    toplevel $w -bg skyblue -bd 3
+#Центрируем справочное окно в основном окне
+    set geometr [rect2window "." "530" "480" ]
+    wm geometry $w $geometr
+#Окно не может перекрываться (yes)
+    wm attributes $w -topmost yes   ;# stays on top - needed for Linux
     wm title $w $title
     wm iconphoto $w iconCert_32x32
-#Обязательно, чтобы обновить БД tcl/tk
-    update
-#Центрируем справочное окно в основном окне
-    center2window "." $w
 
 ############# new #######################
     frame $w.txt -bg skyblue -bd 0
@@ -12023,11 +12029,6 @@ proc ObjectManager {w} {
     if {$w == ".cm"} {
 	wm title . "$app(name) - $caname"
 	wm iconphoto . iconCert_32x32
-	if {$typesys == "win32" } {
-	    wm geometry . 850x595+300+105
-	} else {
-	    wm geometry . 850x575+300+105
-	}
 #Главное окно не изменяется
 	wm resizable . 0 0
     }
@@ -12766,9 +12767,11 @@ proc Dialog_ShowCertificateInfo {w title fieldvalues text certhex crtstatus} {
     
     catch {destroy $w}
     toplevel $w -bd 3  -relief flat -background #39b5da -padx 0 -pady 0
-    wm minsize $w 550 400
-    update
-    center2window  . $w
+#    wm minsize $w 550 400
+    set geometr [rect2window "." "550" "400" ]
+    wm geometry $w $geometr
+  #Окно не может перекрываться (yes)
+    wm attributes $w -topmost yes   ;# stays on top - needed for Linux
     if {$title == "ViewCA"} {
 	wm title $w "Просмотр корневого сертификата УЦ"
     } else {
@@ -12968,11 +12971,12 @@ proc Dialog_ShowRequestInfo {w title fieldvalues text addbut fileimport} {
     
     catch {destroy $w}
     toplevel $w -bd 3  -relief flat -background #39b5da -padx 0 -pady 0 
+    set geometr [rect2window "." "550" "400" ]
+    wm geometry $w $geometr
+  #Окно не может перекрываться (yes)
+    wm attributes $w -topmost yes   ;# stays on top - needed for Linux
     wm title $w $title
     wm iconphoto $w iconCert_32x32
-    wm minsize $w 550 400
-    update
-    center2window  . $w
 
     set w1 $w
     frame $w.mainfr -relief flat -background #eff0f1 -bd 0 -padx 0 -pady 0
@@ -13184,12 +13188,13 @@ proc Dialog_ShowCRLInfo {w title fieldvalues text fileimport} {
     }
     catch {destroy $w}
     toplevel $w -bd 3  -relief flat -background #39b5da -padx 0 -pady 0 
+#Центрируем окно
+    set geometr [rect2window "." "550" "400" ]
+    wm geometry $w $geometr
+#Окно не может перекрываться (yes)
+    wm attributes $w -topmost yes   ;# stays on top - needed for Linux
     wm title $w $title
     wm iconphoto $w iconCert_32x32
-    wm minsize $w 550 400
-#Центрируем окно
-    update
-    center2window  . $w
     
     set w1 $w
     frame $w.mainfr -relief flat -background #eff0f1 -bd 0
