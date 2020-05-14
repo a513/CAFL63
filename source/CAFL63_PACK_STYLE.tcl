@@ -9010,7 +9010,7 @@ if {$wizData(wizardtype) != "csrdb"} {
         set wizData(wizardtype) $wizardtype
         set  wizData(libp11)   [Config::Get library.pkcs11]
 	if {$wizData(libp11) == ""} {
-	    set  wizData(libp11) $::OptionsDialog::input(library.pkcs11)
+	    catch {set  wizData(libp11) $::OptionsDialog::input(library.pkcs11)}
 	}
 
         if {$wizardtype=="p12"} {
