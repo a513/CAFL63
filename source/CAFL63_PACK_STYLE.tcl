@@ -7932,6 +7932,7 @@ if {$defaultkey == "RSA"} {
     variable wizData
     global env
     global home
+    global typesys
     
     set c [$this widget clientArea]
     
@@ -7971,12 +7972,14 @@ if {$defaultkey == "RSA"} {
                 -title "Выберите $label" \
             $f.e$i.entry configure -style red.TEntry
 #            $f.e$i.entry configure -bg red  -highlightbackground #39b5da
-    eval "$c.e1.but configure -command {feselect open {.cm} window {Выберите $label} $home {[namespace current]::wizData(opensslexec)} {*openssl* *ssl* *.exe *}}"
+	    if {$typesys == "x11" } {
+		eval "$c.e1.but configure -command {feselect open {.cm} window {Выберите $label} $home {[namespace current]::wizData(opensslexec)} {*openssl* *ssl* *.exe *}}"
+	    }
 
-        grid $f.l$i -row $i -column 0 -sticky w -pady {3mm 1mm} -padx 4 
-        grid $f.e$i -row $i -column 1 -sticky nwse -padx {0 5mm} -pady {3mm 1mm}
-        incr i
-        continue
+    	    grid $f.l$i -row $i -column 0 -sticky w -pady {3mm 1mm} -padx 4 
+    	    grid $f.e$i -row $i -column 1 -sticky nwse -padx {0 5mm} -pady {3mm 1mm}
+    	    incr i
+    	    continue
         }
         grid $f.l$i -row $i -column 0 -sticky w  -padx 4 -pady {0 1mm}
         grid $f.e$i -row $i -column 1 -sticky nwse  -padx {0 5mm} -pady {0 1mm}
