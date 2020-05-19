@@ -16,9 +16,8 @@ namespace eval ttk::theme::Breeze {
 #	-frame          "#d8d8d8"
 #	-lighter        "#fcfcfc"
 #	    -darker         "#9e9e9e"
-#	-frame          "#d8d8d8"
     array set colors {
-	-frame          white
+	-frame          "#d8d8d8"
 	-lighter        "#fcfcfc"
 	-darker         "#9e9e9e"
 
@@ -740,8 +739,7 @@ set ::px2mm [winfo fpixels . 1m]
 
 if {$existtlf && $::typetlf} {
 #Для Android
-#    set iw [expr [image width $I(radio-checked-active)] * 2]
-    set iw [expr [image width $I(radio-checked-active)]]
+    set iw [expr [image width $I(radio-checked-active)] * 2]
     set upz 1
     if { $::px2mm > 15} {
 	set upz 4
@@ -750,10 +748,9 @@ if {$existtlf && $::typetlf} {
     } elseif { $::px2mm > 5} {
 	set upz 2
     }
-    if {$upz > 1} {
-	foreach index [array names I] {
-	    scaleImage $I($index) $upz
-	}
+
+    foreach index [array names I] {
+	scaleImage $I($index) $upz
     }
         ttk::style element create CheckbuttonMY.indicator image [list $I(checkbox-unchecked) \
                 disabled            $I(checkbox-unchecked-insensitive) \
@@ -897,7 +894,6 @@ if {0} {
                 disabled    $I(button-insensitive) \
             ] -border 3 -sticky ewns
 }
-if {1} {
         ttk::style element create Button.button image [list $I(button) \
                 pressed     $I(button-active) \
                 {selected active}       $I(button-active) \
@@ -906,7 +902,7 @@ if {1} {
                 selected       $I(button-focus) \
                 disabled    $I(button-hover) \
             ] -border 3 -sticky ewns
-}
+
         ttk::style element create Toolbutton.button image [list $I(button-empty) \
                 {active selected !disabled}  $I(button-active) \
                 selected            $I(button-toggled) \
@@ -1104,18 +1100,18 @@ if {1} {
         
         # Treeview
         ttk::style configure Treeview -background white 
-        ttk::style configure Treeview.Item -padding {2 0 0 0} 
+        ttk::style configure Treeview.Item -padding {2 0 0 0}
 if {1} {
 #        {!disabled !selected} $colors(-window) 
-ttk::style map Treeview \
--background [list disabled $colors(-selectbg)\
-        {!disabled !selected} white \
-        selected $colors(-selectbg)] \
--foreground [list disabled $colors(-disabledfg) \
-        {!disabled !selected} black \
-        selected $colors(-selectfg)]
+	ttk::style map Treeview \
+	    -background [list disabled $colors(-selectbg)\
+    		{!disabled !selected} white \
+    		selected $colors(-selectbg)] \
+	-foreground [list disabled $colors(-disabledfg) \
+    	    {!disabled !selected} black \
+    	    selected $colors(-selectfg)]
 }
-        
+
         # Some defaults for non ttk-widgets so that they fit
         # to the Breeze theme, too
         tk_setPalette background [ttk::style lookup . -background] \

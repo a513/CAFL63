@@ -7,6 +7,7 @@ package require base64
 package require http
 package require msgcat
 
+
 global typesys
 set typesys [tk windowingsystem]
 #Главное окно
@@ -83,6 +84,12 @@ if {1} {
 ttk::style configure TCombobox  -padding {0 5 0 5}
   ttk::style configure . -font "Helvetica 10"
 }
+
+ttk::style map MyBorder.TButton -background [list disabled white pressed gray64 active skyblue !active #e2e2e1]
+ttk::style configure MyBorder.TButton -background #e2e2e1  -borderwidth 1
+ttk::style configure MyBorder.TButton  -font TkFixedFont -padding 2
+
+
 ttk::style configure white.TEntry  -foreground black
 ttk::style configure blue.TEntry  -foreground blue
 ttk::style configure red.TEntry  -foreground red
@@ -745,7 +752,7 @@ proc setTempDir {} {
 	if {[file exists $lirssl_static]} {
 	    file delete -force  $lirssl_static
 	}
-#	::freewrap::unpack [file join $myDir "lirssl_static.exe"] $tempDir
+	::freewrap::unpack [file join $myDir "lirssl_static.exe"] $tempDir
         set tclpkcs11 [file join $myDir tclpkcs11.dll]
     }
     "unix" - default { 
@@ -754,7 +761,7 @@ proc setTempDir {} {
 	if {[file exists $lirssl_static]} {
 	    file delete -force  $lirssl_static
 	}
-#	::freewrap::unpack [file join $myDir "lirssl_static"] $tempDir
+	::freewrap::unpack [file join $myDir "lirssl_static"] $tempDir
         set tclpkcs11 [file join $myDir tclpkcs11.p11]
     }
   }
@@ -768,11 +775,9 @@ proc setTempDir {} {
 }
 
 set pathutil [setTempDir]
-if {0} {
 if { $::tcl_platform(platform) eq "unix" &&
                 [catch {file attribute $lirssl_static -permissions +x} rc]} {
     tk_messageBox -title "Выбор утилиты lirssl_static"   -icon error -message "Нет полномочий на смену атрибутов\n$lirssl_static"
-}
 }
 
 font configure TkDefaultFont -size 10
@@ -5369,10 +5374,11 @@ puts "НАСТРОЙКИ=$w"
     pack $w.sep -fill x 
 
     # buttons
-    ttk::button $w.b2ok -text "OK" -width 8 -command "OptionsDialog::ButtonOK"
-    ttk::button $w.b2cancel -text "Отмена" -width 8 -command "OptionsDialog::ButtonCancel"
-    ttk::button $w.b2restore -text "Restore" -width 8 -command "OptionsDialog::ButtonRestore"
-    pack $w.b2cancel $w.b2ok $w.b2restore  -side right -padx 5  -pady {2mm 0} -anchor w
+    ttk::button $w.b2ok -text "Готово" -width 8 -command "OptionsDialog::ButtonOK" -style MyBorder.TButton
+    ttk::button $w.b2cancel -text "Отмена" -width 8 -command "OptionsDialog::ButtonCancel" -style MyBorder.TButton
+#    ttk::button $w.b2restore -text "Restore" -width 8 -command "OptionsDialog::ButtonRestore" -style MyBorder.TButton
+#    pack $w.b2cancel $w.b2ok $w.b2restore  -side right -padx 5  -pady {2mm 0} -anchor w
+    pack $w.b2cancel $w.b2ok  -side right -padx 5  -pady {2mm 0} -anchor w
     
     Notebook:create $w.f.n -pages {"Настройки для Web" "Каталоги" "Типы сертификатов" "Системные"} -width 550 # -height 300
 #    Notebook:create $w.f.n -pages {"Export" "Web" "Folders" "Certificate Classes" "System"} -width 500 # -height 300
@@ -5580,7 +5586,7 @@ proc OptionsDialog::NewProfile {listbox} {
     pack $w.f $w.b -side top -padx 8 -pady 8
     
     # buttons
-    ttk::button $w.b.ok -text "OK" -width 8 -command " \
+    ttk::button $w.b.ok -text "Готово" -width 8 -command " \
         destroy $w ;\
         openssl::Profile_Create \${::OptionsDialog::selectprofilename} \${::OptionsDialog::selectprofiletemplate} ;\
         openssl::Profile_Save ;\
@@ -5864,10 +5870,10 @@ if {$w != ".cm.setupprofiles"} {
     frame $w.sep -height 2 -bd 0 -relief flat -background #e0e0da
     pack $w.sep -fill x 
 
-    ttk::button $w.b2ok -text "OK" -width 8 \
-            -command "ProfileDialog::ButtonOK"
+    ttk::button $w.b2ok -text "Готово" -width 8 \
+            -command "ProfileDialog::ButtonOK"  -style MyBorder.TButton
     ttk::button $w.b2cancel -text "Отмена" -width 8 \
-            -command "ProfileDialog::ButtonCancel"
+            -command "ProfileDialog::ButtonCancel" -style MyBorder.TButton
 
     pack $w.b2cancel $w.b2ok -side right -padx 8 -pady {2mm 0} -anchor w
     
@@ -7359,46 +7365,53 @@ proc tkwizard::buildDialog {name} {
     ttk::button $wizState(widget,helpButton) \
         -text "What's This?" \
         -default normal \
-        -command [namespace code "cmd Help [list $name]"]
+        -command [namespace code "cmd Help [list $name]"] \
+	-style MyBorder.TButton
 
 if {$name != ".cm.opendb" } {
     ttk::button $wizState(widget,backButton) \
         -text "< Пред" \
         -default normal \
         -width 8 \
-        -command [namespace code "cmd Previous [list $name]"]
+        -command [namespace code "cmd Previous [list $name]"] \
+	-style MyBorder.TButton
 
     ttk::button $wizState(widget,nextButton) \
         -text "След >" \
         -default normal \
         -width 8 \
-        -command [namespace code "cmd Next [list $name]"]
+        -command [namespace code "cmd Next [list $name]"] \
+	-style MyBorder.TButton
 }
 
     ttk::button $wizState(widget,finishButton) \
         -text "Готово" \
         -default normal \
         -width 8 \
-        -command [namespace code "cmd Finish [list $name]"]
+        -command [namespace code "cmd Finish [list $name]"] \
+	-style MyBorder.TButton
 if {$name == ".cm.exportp12wizard" || $name == ".cm.certificatewizard" || $name == ".cm.signwizard"} {
 eval "    ttk::button $wizState(widget,cancelButton) \
         -text {Отмена}   \
         -default normal \
         -width 8 \
-        -command {global dbca;place forget $name;tk busy forget .cm.mainfr;menu_enable;set dbca {.cm}}"
+        -command {global dbca;place forget $name;tk busy forget .cm.mainfr;menu_enable;set dbca {.cm}}" \
+	-style MyBorder.TButton
 #        -command {global dbca;wm state .opendb withdraw;wm state .cm normal;set dbca ".cm"}
 } elseif {$name == ".cm.opendb"} {
     eval "    ttk::button $wizState(widget,cancelButton) \
         -text {Отмена}   \
         -default normal \
         -width 8 \
-        -command {global dbca;place forget $name;tk busy forget .cm.mainfr;set dbca {.cm}}"
+        -command {global dbca;place forget $name;tk busy forget .cm.mainfr;set dbca {.cm}}" \
+	-style MyBorder.TButton
 } else {
     ttk::button $wizState(widget,cancelButton) \
         -text "Отмена"   \
         -default normal \
         -width 8 \
-        -command [namespace code "cmd Cancel [list $name]"]
+        -command [namespace code "cmd Cancel [list $name]"] \
+	-style MyBorder.TButton
 }
 
     # pack the buttons
