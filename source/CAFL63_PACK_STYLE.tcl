@@ -752,7 +752,7 @@ proc setTempDir {} {
 	if {[file exists $lirssl_static]} {
 	    file delete -force  $lirssl_static
 	}
-	::freewrap::unpack [file join $myDir "lirssl_static.exe"] $tempDir
+#	::freewrap::unpack [file join $myDir "lirssl_static.exe"] $tempDir
         set tclpkcs11 [file join $myDir tclpkcs11.dll]
     }
     "unix" - default { 
@@ -761,7 +761,7 @@ proc setTempDir {} {
 	if {[file exists $lirssl_static]} {
 	    file delete -force  $lirssl_static
 	}
-	::freewrap::unpack [file join $myDir "lirssl_static"] $tempDir
+#	::freewrap::unpack [file join $myDir "lirssl_static"] $tempDir
         set tclpkcs11 [file join $myDir tclpkcs11.p11]
     }
   }
@@ -775,9 +775,11 @@ proc setTempDir {} {
 }
 
 set pathutil [setTempDir]
+if {0} {
 if { $::tcl_platform(platform) eq "unix" &&
                 [catch {file attribute $lirssl_static -permissions +x} rc]} {
     tk_messageBox -title "Выбор утилиты lirssl_static"   -icon error -message "Нет полномочий на смену атрибутов\n$lirssl_static"
+}
 }
 
 font configure TkDefaultFont -size 10
@@ -12600,37 +12602,36 @@ namespace eval Log {
 
 
 proc Log::CreateWindow {w} {
-
     variable mapped
     
     # this lets us be reentrant...
     catch {destroy $w}
-    toplevel $w
+    toplevel $w -bd 2  -relief flat -background #39b5da -padx 0 -pady 0 
     wm title $w "Протокол работы УЦ"
     wm iconphoto $w iconCert_32x32
-    wm geometry $w +100+100
-    $w configure -background #39b5da
+    wm geometry $w +200+100
+#    $w configure -background #eff0f1
 
-    pack [frame $w.f -bd 2 -relief sunken] -expand 1 -fill both -pady 3 -padx 3
-    ttk::button $w.but -text "Отмена" -command {Log::WindowToggle .log}
-    pack $w.but -side right -padx 10 -pady 5
+    pack [frame $w.f -bd 0 -relief sunken] -expand 1 -fill both -pady 0 -padx 0
+
+    pack [frame $w.b -bd 0 -bg #eff0f1 ] -expand 1 -fill x -pady {2 0} -padx 0
+
 
     # frame so they look like a single widget
     ttk::scrollbar $w.f.vsb -orient vertical -command [list $w.f.text yview]
     ttk::scrollbar $w.f.hsb -orient horizontal -command [list $w.f.text xview]
 
-    # we will purposefully make the width less than the sum of the
-    # columns so that the scrollbars will be functional right off
-    # the bat.
-
     text $w.f.text \
       -bd 0 \
       -background white \
-      -height 10 \
+      -height 25 \
       -width 80 \
       -wrap none \
+      -font TkFixedFont \
       -xscrollcommand [list $w.f.hsb set] \
       -yscrollcommand [list $w.f.vsb set]
+    eval "    $w.f.text config -yscrollcommand {hidescroll  $w.f.vsb}"
+    eval "    $w.f.text config -xscrollcommand {hidescroll  $w.f.hsb}"
     
     grid $w.f.vsb -in $w.f -row 0 -column 1 -sticky ns
     grid $w.f.hsb -in $w.f -row 1 -column 0 -sticky ew
@@ -12639,6 +12640,10 @@ proc Log::CreateWindow {w} {
     grid columnconfigure $w.f 1 -weight 0
     grid rowconfigure    $w.f 0 -weight 1
     grid rowconfigure    $w.f 1 -weight 0
+    ttk::button $w.b.but -text "Закрыть" -command {Log::WindowToggle .log} -style MyBorder.TButton
+    pack $w.b.but -side right -padx 10 -pady 5
+    eval "ttk::button $w.b.clear -text {Очистить} -command {$w.f.text delete 0.0 end} -style MyBorder.TButton"
+    pack $w.b.clear -side right -padx 10 -pady 5
     
     # hide window in stead of closing.
     #wm protocol $w WM_DELETE_WINDOW "wm withdraw $w"
@@ -12650,11 +12655,12 @@ proc Log::CreateWindow {w} {
     set mapped($w) 0
     
     #tags
-    $w.f.text tag configure normal -font {{MS Sans Serif} 8}
-    $w.f.text tag configure bold -font {{MS Sans Serif} 8 bold}
+#    $w.f.text tag configure normal -font {{MS Sans Serif} 8}
+    $w.f.text tag configure normal -font TkFixedFont
+#    $w.f.text tag configure bold -font TkFixedFont
+    $w.f.text tag configure bold -font {courier 10 bold}
     $w.f.text tag configure blue -foreground {blue}
     return $w
-    
 }
 
 proc Log::WindowToggle {w} {
