@@ -77,7 +77,7 @@ set ::aquamenu ""
 ###############
 if {1} {
 #  set ::typetlf 1
-  package provide ttk::theme::Breeze 0.6
+  package provide ttk::theme::Breeze
   source [file join $myDir breeze.tcl]
   ttk::style theme use Breeze
   ttk::style configure TEntry  -padding -2
@@ -781,7 +781,6 @@ if { $::tcl_platform(platform) eq "unix" &&
     tk_messageBox -title "Выбор утилиты lirssl_static"   -icon error -message "Нет полномочий на смену атрибутов\n$lirssl_static"
 }
 }
-
 font configure TkDefaultFont -size 10
 font configure TkFixedFont -size 10
 
@@ -12611,10 +12610,12 @@ proc Log::CreateWindow {w} {
     wm iconphoto $w iconCert_32x32
     wm geometry $w +200+100
 #    $w configure -background #eff0f1
+#Окно протокола не изменяется
+    wm resizable $w 0 0
 
     pack [frame $w.f -bd 0 -relief sunken] -expand 1 -fill both -pady 0 -padx 0
 
-    pack [frame $w.b -bd 0 -bg #eff0f1 ] -expand 1 -fill x -pady {2 0} -padx 0
+    pack [frame $w.b -bd 0 -bg #eff0f1 ] -expand 1 -fill both -pady {2 0} -padx 0
 
 
     # frame so they look like a single widget
@@ -12630,16 +12631,16 @@ proc Log::CreateWindow {w} {
       -font TkFixedFont \
       -xscrollcommand [list $w.f.hsb set] \
       -yscrollcommand [list $w.f.vsb set]
-    eval "    $w.f.text config -yscrollcommand {hidescroll  $w.f.vsb}"
-    eval "    $w.f.text config -xscrollcommand {hidescroll  $w.f.hsb}"
+#    eval "    $w.f.text config -yscrollcommand {hidescroll  $w.f.vsb}"
+#    eval "    $w.f.text config -xscrollcommand {hidescroll  $w.f.hsb}"
     
     grid $w.f.vsb -in $w.f -row 0 -column 1 -sticky ns
     grid $w.f.hsb -in $w.f -row 1 -column 0 -sticky ew
-    grid $w.f.text -in $w.f -row 0 -column 0 -sticky nsew -padx 0 -pady 0
+    grid $w.f.text -in $w.f -row 0 -column 0 -sticky nwse -padx 0 -pady 0
     grid columnconfigure $w.f 0 -weight 1
-    grid columnconfigure $w.f 1 -weight 0
+    grid columnconfigure $w.f 1 -weight 1
     grid rowconfigure    $w.f 0 -weight 1
-    grid rowconfigure    $w.f 1 -weight 0
+    grid rowconfigure    $w.f 1 -weight 1
     ttk::button $w.b.but -text "Закрыть" -command {Log::WindowToggle .log} -style MyBorder.TButton
     pack $w.b.but -side right -padx 10 -pady 5
     eval "ttk::button $w.b.clear -text {Очистить} -command {$w.f.text delete 0.0 end} -style MyBorder.TButton"
