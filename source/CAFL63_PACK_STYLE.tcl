@@ -80,8 +80,9 @@ if {1} {
   package provide ttk::theme::Breeze
   source [file join $myDir breeze.tcl]
   ttk::style theme use Breeze
-  ttk::style configure TEntry  -padding -2
-ttk::style configure TCombobox  -padding {0 5 0 5}
+  ttk::style configure TEntry  -padding -3
+#ttk::style configure TCombobox  -padding {0 2 0 0}
+  ttk::style configure TCombobox  -padding -3
   ttk::style configure . -font "Helvetica 10"
 }
 
@@ -781,6 +782,7 @@ if { $::tcl_platform(platform) eq "unix" &&
     tk_messageBox -title "Выбор утилиты lirssl_static"   -icon error -message "Нет полномочий на смену атрибутов\n$lirssl_static"
 }
 }
+
 font configure TkDefaultFont -size 10
 font configure TkFixedFont -size 10
 
@@ -6009,7 +6011,8 @@ if {$defaultkey == "RSA"} {
     grid $f.lyear -row 0 -column 0 -columnspan 2 -sticky w -padx {5mm 0} -pady {5mm 1mm}
     label $f.labyear -text "Количество лет:" 
     grid $f.labyear -row 1 -column 0  -sticky w -padx {10mm 0} -pady 1mm
-    spinbox $f.years -from 0 -to 25 -state readonly -textvariable ::yearcert -justify right -width 5 -bg white -command {selectyears}
+    ttk::spinbox $f.years -from 0 -to 25 -state readonly -textvariable ::yearcert -justify right -width 5 -command {selectyears} 
+    #  -bg white
     grid $f.years -row 1 -column 1 -columnspan 1 -sticky w -padx 0 -pady {0 0}
     label $f.labdays -text "Количество дней:"
     grid $f.labdays -row 2   -sticky w -padx {10mm 0} -pady 1mm
@@ -7729,8 +7732,6 @@ bind .cm.setupwizard <<WizNextStep>> {[%W namespace]::nextStep %W}
 
     # use nice icon
     $this widget icon configure -image img_cert  -background white
-     #eff0f1
-     #39b5da
         
     set c [$this widget clientArea]
     
@@ -7745,13 +7746,10 @@ bind .cm.setupwizard <<WizNextStep>> {[%W namespace]::nextStep %W}
             -dialogtype directory \
             -variable [namespace current]::wizData(dir_ca) \
             -title "Выберите каталог для БД УЦ" \
-            -width 100 \
             -initialdir $env(HOME) \
             -parent ".cm"
     $c.e1 configure  -background white
 #Подключаем файловый проводник FE
-#    eval "$c.e1.but configure -command {feselect dir {.cm} frame {Выберите каталог для БД УЦ} $home {[namespace current]::wizData(dir_ca)} {}}"
-
     eval "$c.e1.but configure -command {feselect dir {.cm} window {Выберите каталог для БД УЦ} $home {[namespace current]::wizData(dir_ca)} {}}"
 
     label $c.l0  -image db_build_40x40 -compound left -bg white
@@ -7761,19 +7759,18 @@ bind .cm.setupwizard <<WizNextStep>> {[%W namespace]::nextStep %W}
 
     label $c.l2 -text "Пароль для БД УЦ:"
     ttk::entry $c.e2 -width 40 -show * -textvariable [namespace current]::wizData(capassword) 
-#     -highlightbackground #39b5da
     
     label $c.l3 -text "Повторите пароль:"
     ttk::entry $c.e3 -width 40 -show * -textvariable [namespace current]::wizData(capassword2)
 
     grid $c.l1 -row 1 -column 0 -sticky w -padx 4 -pady {5mm 1mm}
-    grid $c.e1 -row 1 -column 1 -sticky ws -padx {4 5mm} -pady 1mm
+    grid $c.e1 -row 1 -column 1 -sticky news -padx {4 5mm} -pady {5mm 1mm}
+    grid columnconfigure $c 1 -weight 1
     grid $c.l2 -row 2 -column 0 -sticky w -padx 4 -pady 1mm
     grid $c.e2 -row 2 -column 1 -sticky w -padx 4 -pady 1mm
     grid $c.l3 -row 3 -column 0 -sticky w -padx 4 -pady 1mm
     grid $c.e3 -row 3 -column 1 -sticky w -padx 4 -pady 1mm
-    
-    grid columnconfigure $c 1 -weight 1
+
     focus $c.e1.entry
 }
 

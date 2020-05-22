@@ -657,7 +657,10 @@ if {0} {
 
         ttk::style element create Spinbox.field \
             image [list $I(entry) focus $I(entry-focus) disabled $I(entry-insensitive) hover $I(entry-active)] \
-            -border 4 -padding {6 8} -sticky news
+            -border 4 -padding {4 4} -sticky news
+#MY
+#            -border 4 -padding {6 8} -sticky news
+
         ttk::style element create Spinbox.uparrow \
             image [list $I(arrow-up-small) \
                         active    $I(arrow-up-small-prelight) \
