@@ -8569,6 +8569,7 @@ bind .cm.certificatewizard <<WizNextStep>> {[%W namespace]::nextStep %W}
     ttk::entry $c.e1 -textvariable [namespace current]::wizData(CN) 
     grid $c.l1 -row 0 -column 0 -sticky w -padx {4 0} -pady {5mm 4}
     grid $c.e1 -row 0 -column 1 -sticky nwse -padx {0 5mm} -pady {5mm 4}
+    grid columnconfigure $c 0 -weight 0
     grid columnconfigure $c 1 -weight 1
 }
 
@@ -8593,10 +8594,11 @@ bind .cm.certificatewizard <<WizNextStep>> {[%W namespace]::nextStep %W}
     set com [subst $com2]
     eval $com
 
-    pack $c1.vs -side right -fill y
+    pack $c1.vs -side right -fill y 
     pack $c1.sf  -side top -fill both -expand 1
     $c1.sf.scrolled configure -background white
-$c1.sf.scrolled configure -padx 10 -pady 10 
+$c1.sf.scrolled configure -padx 10
+# -pady 10 
     set c $c1.sf.scrolled
 
     # all optional and required fields
@@ -8677,20 +8679,19 @@ $c1.sf.scrolled configure -padx 10 -pady 10
                 set wizData($field) $dflt
             }
         }
-        grid $c.l$i -row $i -column 0 -sticky w -padx 0 -pady 1mm
-        grid $c.e$i -row $i -column 1 -sticky we -padx 0 -pady 1mm
-        grid rowconfigure $c $i -weight 0
+        grid $c.l$i -row $i -column 0 -sticky w -padx 0 -pady {1mm 0}
+        grid $c.e$i -row $i -column 1 -sticky we -padx 0 -pady {1mm 0}
         incr i
         incr pp
     }
-if {$i < 7} {
-    pack forget $c1.vs
-}
     
     if {$oidO == 1 && $oidCN > -1} {
 	$c.l$oidCN configure -text "  $oidCN. Организация:\n     (CN)"
     }
     grid columnconfigure $c 1 -weight 1
+    if {$i < 7} {
+	pack forget $c1.vs
+    }
 }
 
 
@@ -8720,8 +8721,8 @@ if {$i < 7} {
 	$this configure -nextstep "filename"
 	label $c.l2 -text "Повторите пароль:"
 	ttk::entry $c.e2 -width 40  -show * -textvariable [namespace current]::wizData(keypassword2)
-	grid $c.l2 -row 1 -column 0 -sticky w -padx 4 -pady 1mm
-	grid $c.e2 -row 1 -column 1 -sticky w -padx {4 5mm} -pady 1mm
+	grid $c.l2 -row 1 -column 0 -sticky w -padx {4 0} -pady 1mm
+	grid $c.e2 -row 1 -column 1 -sticky w -padx {0 5mm} -pady 1mm
 	$this configure -nextstep "filename"
     } else {
 	$c.l1 configure -text "PIN-код:"
@@ -8811,12 +8812,13 @@ if {$wizData(wizardtype) != "csrdb"} {
     $c.e2.but configure -background white
     set zz "5mm"
 if {$wizData(wizardtype) != "csrdb"} {
-    grid $c.l1 -row 0 -column 0 -sticky w -padx 4 -pady {5mm 1mm}
-    grid $c.e1 -row 0 -column 1 -sticky nwse -padx {4 5mm} -pady {5mm 1mm}
+    grid $c.l1 -row 0 -column 0 -sticky w -padx {4 0} -pady {5mm 1mm}
+    grid $c.e1 -row 0 -column 1 -sticky nwse -padx {0 5mm} -pady {5mm 1mm}
     set zz 0
 }
-    eval "grid $c.l2 -row 1 -column 0 -sticky w -padx 4 -pady {$zz 1mm}"
-    eval "grid $c.e2 -row 1 -column 1 -sticky nwse -padx {4 5mm} -pady {$zz 1mm}"
+    eval "grid $c.l2 -row 1 -column 0 -sticky w -padx {4 0} -pady {$zz 1mm}"
+    eval "grid $c.e2 -row 1 -column 1 -sticky nwse -padx {0 5mm} -pady {$zz 1mm}"
+    grid columnconfigure $c 0 -weight 0
     grid columnconfigure $c 1 -weight 1
 }
 
