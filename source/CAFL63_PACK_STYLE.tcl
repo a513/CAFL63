@@ -12668,11 +12668,11 @@ proc Log::WindowToggle {w} {
     if {[wm state $w] != "normal"} {
 	wm deiconify $w
 	set mapped($w) 1
+	raise $w
     } else {
 	wm withdraw $w
 	set mapped($w) 0
     }
-    raise $w
 }
 proc Log::LogMessage {msg {option ""} } {
 
