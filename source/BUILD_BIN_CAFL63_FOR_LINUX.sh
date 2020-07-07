@@ -10,11 +10,16 @@ if [ $1 -ne 64  -a $1 -ne 32 ]
 	echo "Bad type 32|64"
 	exit 1
 fi
+
+rm -f lirssl_static
+cp -f lirssl_static_x$1 ./lirssl_static
 rm -f tclpkcs11.p11
 cp -f tclpkcs11_$1.so ./tclpkcs11.p11
 echo $a
-./tclexecomp_v.1.0.4.linux64 CAFL63_PACK_STYLE.tcl tkfe.tcl breeze.tcl cert2text.tcl alloids.tcl ru.msg ascii.enc tclpkcs11.p11 orlov_250x339.png -forcewrap  -w ./tclexecomp_v.1.0.4.linux$1 -o CAFL63_linux$1_v1.0.4
-chmod 755 CAFL63_linux$1_v1.0.4
+
+../WRAP_MAC/tclexecomp64_v.1.0.4 CAFL63_PACK_STYLE.tcl tkfe.tcl breeze.tcl cert2text.tcl alloids.tcl ascii.enc lirssl_static tclpkcs11.p11 orlov_250x339.png -forcewrap  -w ../WRAP_MAC/tclexecomp_v.1.0.4.linux$1 -o CAFL63_linux$1
+chmod 755 CAFL63_linux$1
+rm -f lirssl_static
 rm -f tclpkcs11.p11
 
 

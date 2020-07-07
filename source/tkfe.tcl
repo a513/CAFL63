@@ -30,7 +30,7 @@ namespace eval FE {
   mcset en "Удалить файл" "Delete file"
   mcset en "Удалить каталог" "Delete directory"
   mcset en "Создать каталог" "Create directory"
-  mcset en "Создать пустой файл" "Create empty file"
+  mcset en "Создать пустой файл" "Create an empty file"
   mcset en "Нет доступа" "No access"
   mcset en "Переименовать каталог" "Rename directory"
   mcset en "Переименовать файл" "Rename file"
@@ -152,7 +152,16 @@ namespace eval FE {
     DoYgra6uFIYeHjxFtkU8Hh2GOkE7ODfBMxwchRUyLi8tNTQ0MBsbhQABAwUCDz4+ORoahARDTEtKSQcxGecZhAY2SEdGQA0Y8vKFCwgICQohF/z8hQwqIHxIYaGgwUYI
     CQUCADs=
   }
-
+  image create photo addfile -data {
+    R0lGODlhEAAQAIABADMzM////yH+EUNyZWF0ZWQgd2l0aCBHSU1QACH5BAEKAAEA
+    LAAAAAAQABAAAAIpDI4Qy3ttFDQT1Wqb1ElP9oCfs1HjdUKl2q3gA49W95UZpswJ
+    vKekVAAAOw==
+  }
+  image create photo adddir -data {
+    R0lGODlhEAAQAIABADMzM////yH+EUNyZWF0ZWQgd2l0aCBHSU1QACH5BAEKAAEA
+    LAAAAAAQABAAAAInDH6hy+gMnZwGWgXqjXqvnHlfJ4Iit0lkk7RpOyEYa6g1mLzP
+    KQcFADs=
+  }
   #Процедура смены языка и синхронный перевод
   proc changelang {w typew} {
     #Смена языка и синхронный перевод
@@ -542,7 +551,7 @@ namespace eval FE {
       eval "bind $fm.filter.entdir <Key-Return> {[namespace current]::selectobj $fm.fr.t $typew $typefb 3 $otv}"
       $fm.filter.entdir delete 0 end
       $fm.filter.entdir insert end [lindex $msk 0]
-      $fm.filter.entdir configure -state readonly
+#      $fm.filter.entdir configure -state readonly
       $fm.filter configure -text [mc "Фильтр файлов:"]
     }
     variable [namespace current]::hiddencb
@@ -556,10 +565,20 @@ namespace eval FE {
 
     labelframe $fm.tekdir -text [mc "Текущий каталог"] -bg skyblue -bd 0 -labelanchor n
     eval "button $fm.tekdir.up -relief flat -image icondirup -command {[namespace current]::goup $fm $typefb} -bg white -activebackground white -bd 0 -padx 0 -pady 0 "
-    eval "bind  $fm.tekdir.up <Enter> {[namespace current]::helptools $fm.helpview $fm.tekdir.entdir 1.0 {[mc {Перейти вверх}]} ne}"
+    eval "bind  $fm.tekdir.up <Enter> {[namespace current]::helptools $fm.helpview $fm.tekdir.up 1.0 {[mc {Перейти вверх}]} ne}"
     pack $fm.tekdir.up -side right -anchor nw -fill none -expand 0
+    if {$typefb != "dir"} {
+	eval "button $fm.tekdir.addfile -relief flat -image addfile -command {[namespace current]::createdir file $fm.titul.lab $fm $typefb} -bg white -activebackground white -bd 0 -padx 0 -pady 0 "
+	eval "bind  $fm.tekdir.addfile <Enter> {[namespace current]::helptools $fm.helpview $fm.tekdir.addfile 1.0 {[mc {Создать пустой файл}]} ne}"
+	pack $fm.tekdir.addfile -side right -anchor nw -fill none -expand 0
+	eval "bind  $fm.tekdir.addfile <Leave> {place forget $fm.helpview}"
+    }
+    eval "button $fm.tekdir.adddir -relief flat -image adddir -command {[namespace current]::createdir dir $fm.titul.lab $fm $typefb} -bg white -activebackground white -bd 0 -padx 0 -pady 0 "
+    eval "bind  $fm.tekdir.adddir <Enter> {[namespace current]::helptools $fm.helpview $fm.tekdir.adddir 1.0 {[mc {Создать каталог}]} ne}"
+    pack $fm.tekdir.adddir -side right -anchor nw -fill none -expand 0
 
     eval "bind  $fm.tekdir.up <Leave> {place forget $fm.helpview}"
+    eval "bind  $fm.tekdir.adddir <Leave> {place forget $fm.helpview}"
     entry $fm.tekdir.entdir -relief flat -bg white -highlightthickness 0 -highlightbackground skyblue -highlightcolor blue 
     pack $fm.tekdir.entdir -side right -anchor ne -fill both -expand 1
     $fm.tekdir.entdir delete 0 end

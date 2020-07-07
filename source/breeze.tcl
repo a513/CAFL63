@@ -535,14 +535,25 @@ if {0} {
         #
         # Elements:
         #
-
+if {0} {
         ttk::style element create Button.button image [list $I(button) \
                 pressed     $I(button-focus) \
                 {active focus}       $I(button-active) \
                 active      $I(button-hover) \
-                focus       $I(button-hover) \
+                focus       $I(button-active) \
                 disabled    $I(button-insensitive) \
             ] -border 3 -sticky ewns
+} else {
+        ttk::style element create Button.button image [list $I(button) \
+                pressed     $I(button-active) \
+                {active focus}       $I(button-active) \
+                active      $I(button-active) \
+                {selected active}       $I(button-active) \
+                selected       $I(button-focus) \
+                disabled    $I(button-hover) \
+            ] -border 3 -sticky ewns
+}
+#                !active      $I(button-hover) 
 
         ttk::style element create Toolbutton.button image [list $I(button-empty) \
                 {active selected !disabled}  $I(button-active) \

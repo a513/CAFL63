@@ -596,7 +596,7 @@ if {1} {
   }
  
   set token_slotid $::slotid_tek
-  puts "token_slotid=$token_slotid"
+#  puts "token_slotid=$token_slotid"
   if { [pki::pkcs11::login $::handle $token_slotid $attr(keypassword)] == 0 } {
     tk_messageBox -title "Запрос на сертификат" -message "Не смогли залогиниться на токене\nПроверьте PIN-код." -detail "Информация о токене:\n$::tokeninfo" -icon error  -parent .
     return ""
@@ -633,7 +633,7 @@ tk_messageBox -title "Запрос на сертификат" -message "type=$ty
   } else {
     set labkey $attr(CN)
   }
-  puts "labkey=$labkey"
+#  puts "labkey=$labkey"
   lappend aa $labkey
   pki::pkcs11::rename key $aa
 
@@ -753,7 +753,7 @@ proc setTempDir {} {
 	if {[file exists $lirssl_static]} {
 	    file delete -force  $lirssl_static
 	}
-#	::freewrap::unpack [file join $myDir "lirssl_static.exe"] $tempDir
+	::freewrap::unpack [file join $myDir "lirssl_static.exe"] $tempDir
         set tclpkcs11 [file join $myDir tclpkcs11.dll]
     }
     "unix" - default { 
@@ -762,7 +762,7 @@ proc setTempDir {} {
 	if {[file exists $lirssl_static]} {
 	    file delete -force  $lirssl_static
 	}
-#	::freewrap::unpack [file join $myDir "lirssl_static"] $tempDir
+	::freewrap::unpack [file join $myDir "lirssl_static"] $tempDir
         set tclpkcs11 [file join $myDir tclpkcs11.p11]
     }
   }
@@ -776,11 +776,9 @@ proc setTempDir {} {
 }
 
 set pathutil [setTempDir]
-if {0} {
 if { $::tcl_platform(platform) eq "unix" &&
                 [catch {file attribute $lirssl_static -permissions +x} rc]} {
-    tk_messageBox -title "Выбор утилиты lirssl_static"   -icon error -message "Нет полномочий на смену атрибутов\n$lirssl_static"
-}
+    tk_messageBox -title "Выбор утилиты lirssl_static"   -icon error -message "Нет полномочий на смену атрибутов\n$lirssl_static"  -parent .
 }
 
 font configure TkDefaultFont -size 10
@@ -803,7 +801,7 @@ ttk::style configure butFr.TFrame      -background #eff0f1 -borderwidth 2 -relie
 ttk::style configure area.TFrame      -background white -borderwidth 2 -relief groove -padx 0
 ttk::style map TButton -background [list disabled #d9d9d9 pressed #a3a3a3  active #ff6a00] -foreground [list disabled #a3a3a3] -relief [list {pressed !disabled} sunken]
 ttk::style configure My.TButton -borderwidth 3
-ttk::style configure TButton -borderwidth 3  -background #39b5da
+ttk::style configure TButton -borderwidth 3  -background #cdc7c2
 ttk::style map My.TButton -background [list disabled #d9d9d9  active red] -foreground [list disabled #a3a3a3] -relief [list {pressed !disabled} sunken]
 ttk::style configure MenuAqua.TButton -borderwidth 0 -background #e0dfde -relief flat
 ttk::style map MenuAqua.TButton -background [list disabled #d9d9d9  active #ffffff  pressed #a3a3a3] -foreground [list disabled #a3a3a3] 
@@ -2313,7 +2311,8 @@ namespace eval openssl {
     set openssl_executable {openssl}
     global typesys
 
-    set cmd(newroot) {"$openssl" genrsa -des3 -passout env:capassword  1024}
+#    set cmd(newroot) {"$openssl" genrsa -des3 -passout env:capassword  1024}
+    set cmd(newroot) {"$openssl" genrsa -des3 -passout env:capassword  $defaultpar}
     set cmd(newrootgost) {"$openssl" genpkey -algorithm $defaultkey -pkeyopt paramset:$defaultpar  -des3 -pass env:capassword}
 
     set cmd(signroot) {"$openssl" req -new -utf8 -x509 -extensions ca_extensions -reqexts ca_reqexts -days 3650 -config config.cfg -key [file join $attr(dir_db) rootca.key] -passin env:capassword}
@@ -2604,6 +2603,7 @@ proc parse_cert_gost {cert} {
 	}
 #puts "ret(pubkey_algo)=$ret(pubkey_algo)"
 	switch -- $ret(pubkey_algo) {
+		"1 2 840 113549 1 1 1" -
 		"rsaEncryption" {
 			set pubkey [binary format B* $pubkey]
 			binary scan $pubkey H* ret(pubkey)
@@ -2710,6 +2710,7 @@ proc parse_csr_gost {csr} {
 	}
 #puts "pubkey_type=$pubkey_type"
 	switch -- $pubkey_type {
+		"1 2 840 113549 1 1 1" -
 		"rsaEncryption" {
 			set pubkey [binary format B* $pubkey]
 			binary scan $pubkey H* ret(pubkey)
@@ -2771,7 +2772,6 @@ proc openssl::ConfigFile_CreateDN {attr} {
 }
 
 proc openssl::ConfigFile_IfExists {name variablename} {
-    
 #    puts "openssl::IfExists $name $variablename"
     upvar $variablename varname
     #puts "variable : $varname"
@@ -3519,8 +3519,9 @@ proc openssl::Profile_Pack {profile} {
     } else {
     # Key Size
 #puts "XA0 prof(req.default_bits.selected)=$prof(req.default_bits.selected)"
-	set i [lsearch -exact $opts(req.default_bits.labels) $prof(req.default_bits.selected)]
-	set prof(req.default_bits) [lindex $opts(req.default_bits.options) $i]
+#	set i [lsearch -exact $opts(req.default_bits.labels) $prof(req.default_bits.selected)]
+#	set prof(req.default_bits) [lindex $opts(req.default_bits.options) $i]
+	set prof(req.default_param) $prof(req.default_bits.selected)
     }
     array unset prof req.default_bits.selected
     
@@ -4392,7 +4393,7 @@ proc openssl::Certificate_GetInfo {args} {
 #                {}
             }
             set result $attributes
-puts "SUBJECT from CERT=$result"
+#puts "SUBJECT from CERT=$result"
 	}
         text {
             set command [subst $cmd(crt_gettext)]
@@ -4931,7 +4932,7 @@ proc openssl::Profile_Create {profilename {templatename {}} } {
     variable templates
     global profile_template
 
-    puts "openssl::Profile_Create $profilename $templatename"
+#    puts "openssl::Profile_Create $profilename $templatename"
     
     if {$templatename == ""} {
         set templatename profile_template
@@ -4987,7 +4988,7 @@ proc openssl::Profile_Load {} {
     set prof [certdb eval {select mainDB.profilesReq from mainDB where mainDB.dateCreateDB=$db(dateCreateDB)}]
 #    puts "PROF_LOAD=$prof"
     if {[lindex $prof 0] != "" } {
-    puts "Я ЗДЕСЯ1"
+#    puts "Я ЗДЕСЯ1"
 	set prof [string range $prof 1 end-1]
 #    puts "PROF_LOAD1=$prof"
         array unset profiles
@@ -5343,7 +5344,7 @@ proc OptionsDialog::Create {w} {
     set windowname $w
     
     catch "destroy $w"
-puts "НАСТРОЙКИ=$w"
+#puts "НАСТРОЙКИ=$w"
     labelframe  $w -labelanchor n -bd 0 -relief flat -padx 0 -pady 0  -background #e0e0da
     $w configure -text "УЦ ФЗ-63. Настройки" -font {Times 11 bold}
 
@@ -5514,7 +5515,7 @@ if {$y1 < $hl} {
     
     label $f.l0 -text "" -font {Times 11 bold italic}
     set fnt(std) [$f.l0 cget -font]
-puts "FONT=[$f.l0 cget -font]"
+#puts "FONT=[$f.l0 cget -font]"
     set fnt(bold) [list [lindex $fnt(std) 0] [lindex $fnt(std) 1] bold]
 
     label $f.l1 -text "Системные средства" -font $fnt(bold) -bg #eff0f1
@@ -5745,12 +5746,13 @@ proc ProfileDialog::keyParam {w num key} {
     set a [expr {$a - 1}]
     set f [string range $w 0 $a]
 
-puts "keyParam w=$w"
-puts "keyParam f=$f"
+#puts "keyParam w=$w"
+#puts "keyParam f=$f"
 #puts "keyParam=$num"
-puts "keyParam=$key"
+#puts "keyParam=$key"
     set listBits {}
     $f.c1 delete 0 end
+#tk_messageBox -title "keyParam" -icon info -message "keyParam w=$w\nkeyParam f=$f\nkeyParam=$key"  -parent $w
 
 #    $f.c2 configure -state disabled
 if {$key == "RSA"} {
@@ -5760,7 +5762,7 @@ if {$key == "RSA"} {
     $f.l2 configure -text "Key Size"
     # insert choices
     set i 0
-    foreach v $opts(req.default_bits.labels) {
+    foreach v $opts(req.default_bits.options) {
 	if {$first == "" && $i == 1 } { set first $v}
 	lappend listBits $v
 	incr i
@@ -5921,7 +5923,7 @@ if {$w != ".cm.setupprofiles"} {
 	set defaultpar $::ProfileDialog::prof(req.default_param.selected)
     }
     ttk::combobox $f.ckey -width 20  -textvariable ::ProfileDialog::prof(req.default_key.selected) -values $listKey
-puts "CKEY_F=$f"
+#puts "CKEY_F=$f"
     $f.ckey delete 0 end
     $f.ckey insert 0 $defaultkey
     bind $f.ckey <<ComboboxSelected>> {ProfileDialog::keyParam %W f $::ProfileDialog::prof(req.default_key.selected);puts $::ProfileDialog::prof(req.default_key.selected)}
@@ -5935,7 +5937,7 @@ if {$defaultkey == "RSA"} {
     # insert choices
     set as $::ProfileDialog::prof(req.default_bits.selected)
     set ok 0
-    foreach v $opts(req.default_bits.labels) {
+    foreach v $opts(req.default_bits.options) {
 	lappend listBits $v
 	if {$v != $as && $ok == 0} {
 	    incr tekB
@@ -5955,7 +5957,8 @@ if {$defaultkey == "RSA"} {
     # set current setting
     $f.c1 delete 0 end
     if {$defaultkey == "RSA"} {
-	$f.c1 insert end [lindex $listBits $tekB]
+#	$f.c1 insert end [lindex $listBits $tekB]
+	$f.c1 insert 0 $defaultpar
     } else {
 	$f.c1 insert 0 $defaultpar
     }
@@ -6352,7 +6355,7 @@ proc ProfileDialog::ButtonOK {} {
     } else {
 	set ::ProfileDialog::prof(req.default_libp11.selected) $::OptionsDialog::input(library.pkcs11)
     }    
-puts "LIBP11=$::ProfileDialog::prof(req.default_libp11.selected)"
+#puts "LIBP11=$::ProfileDialog::prof(req.default_libp11.selected)"
     set defaultkey [$windowname.mainfr.f.n.f1.ckey get]
     set ::ProfileDialog::prof(req.default_key.selected) [$windowname.mainfr.f.n.f1.ckey get]
     if {$defaultkey != "RSA"} {
@@ -7124,7 +7127,7 @@ proc tkwizard::cmd {command name} {
 
     upvar #0 [namespace current]::@$name-state wizState
     upvar #0 [namespace current]::@$name-config wizConfig
-puts "tkwizard::cmd=$command ;name=$name"
+#puts "tkwizard::cmd=$command ;name=$name"
 
 #        Next       {puts "tkwizard::cmd=$command";tkwizard::handleEvent .cm$name "<<WizNextStep>>";puts "tkwizard::cmd=END"}
 #OK?        Next       {puts "tkwizard::cmd=$command";tkwizard::handleEvent $name "<<WizNextStep>>";puts "tkwizard::cmd=END"}
@@ -7159,7 +7162,7 @@ puts "tkwizard::cmd=$command ;name=$name"
 }
 
 proc tkwizard::handleEvent {name event} {
-puts "tkwizard::handleEvent=$name"
+#puts "tkwizard::handleEvent=$name"
 
     upvar #0 [namespace current]::@$name-state wizState
     upvar #0 [namespace current]::@$name-config wizConfig
@@ -7170,15 +7173,15 @@ puts "tkwizard::handleEvent=$name"
         }
 
         <<WizNextStep>> {
-puts "tkwizard::handleEvent=WizNextStep; name=$name"
+#puts "tkwizard::handleEvent=WizNextStep; name=$name"
             set thisStep [lindex $wizState(history) end]
             lappend wizState(history) $wizConfig(-nextstep)
             showStep $name 
         }
 
         <<WizPrevStep>> {
-puts "tkwizard::handleEvent=WizPrevStep; name=$name"
-puts "History=$wizState(history)"
+#puts "tkwizard::handleEvent=WizPrevStep; name=$name"
+#puts "History=$wizState(history)"
             # pop an item off of the history
 
             set p [expr {[llength $wizState(history)] -2}]
@@ -7204,7 +7207,7 @@ puts "History=$wizState(history)"
 }
 
 proc tkwizard::showStep {name} {
-puts "tkwizard::showStep=$name"
+#puts "tkwizard::showStep=$name"
     upvar #0 [namespace current]::@$name-state wizState
     upvar #0 [namespace current]::@$name-config wizConfig
     upvar #0 [namespace current]::@$name-stepData wizStepData
@@ -7340,9 +7343,9 @@ proc tkwizard::buildDialog {name} {
     set wizState(widget,layoutFrame)  $prefix.layoutFrame
 
     if {![winfo exists ".cm"]} {
-	frame ".cm" -bd 2 -padx 1 -pady 1 -background #39b5da
+	frame ".cm" -bd 2 -padx 1 -pady 1 -background #cdc7c2
 	pack .cm -fill both -expand 1
-#	toplevel ".cm" -bd 2 -padx 1 -pady 1 -background #39b5da
+#	toplevel ".cm" -bd 2 -padx 1 -pady 1 -background #cdc7c2
 	#c0bab4
     }
 
@@ -7489,7 +7492,7 @@ proc tkwizard::buildLayout-basic {name} {
     ttk::frame $layout -class WizLayoutBasic -style basic.TFrame -relief flat
 #    pack $layout
     #  -bg #e0e0da
-#    frame $layout -class WizLayoutBasic  -bg #39b5da
+#    frame $layout -class WizLayoutBasic  -bg #cdc7c2
     option add *WizLayoutBasic*Label.background	white interactive
 #    option add *WizLayoutBasic*Label.background	39b5da interactive
 
@@ -7806,7 +7809,7 @@ bind .cm.setupwizard <<WizNextStep>> {[%W namespace]::nextStep %W}
 if {$defaultkey == "RSA"} {
     $f.l2 configure -text "Key Size"
     # insert choices
-    foreach v $opts(req.default_bits.labels) {
+    foreach v $opts(req.default_bits.options) {
 	lappend listBits $v
     }
 } elseif {$defaultkey == "gost2012_512"} {
@@ -7823,7 +7826,7 @@ if {$defaultkey == "RSA"} {
     $f.c1 delete 0 end
 if {$defaultkey == "RSA"} {
     set j 0
-    foreach v $opts(req.default_bits.labels) {
+    foreach v $opts(req.default_bits.options) {
 	if {$j == 1 } { 
 	    $f.c1 insert end $v 
 	    break    
@@ -7837,6 +7840,10 @@ if {$defaultkey == "RSA"} {
     grid $f.ckey -row 1 -column 1 -sticky w -padx 8 -pady {5mm 1mm}
     grid $f.l2 -row 2 -column 0 -sticky new -padx 8 -pady 1mm
     grid $f.c1 -row 2 -column 1 -sticky w -padx 8 -pady 1mm
+
+    ttk::checkbutton $f.c2 -text "Allow Key Size Override" -variable input(keysize.override)
+#    grid $f.c2 -row 3 -column 0 -columnspan 2 -sticky w -padx 8 -pady 8
+    set ::ProfileDialog::input(formatKey.override) 0
 
 #    grid columnconfigure $f 1 -weight 0
 #    grid rowconfigure $f 0 -weight 0
@@ -7944,7 +7951,8 @@ if {$defaultkey == "RSA"} {
     global env
     global home
     global typesys
-    
+    global defaultkey
+
     set c [$this widget clientArea]
     
     $this stepconfigure \
@@ -7975,6 +7983,9 @@ if {$defaultkey == "RSA"} {
 #	    puts "SYSTEM=$varname"
             set wizData($varname) [Config::Get $varname]
 	    ttk::entry $f.e$i -textvariable [namespace current]::wizData($varname)
+	    if {$defaultkey == "RSA"} {
+		$f.e$i delete 0 end
+	    }
         } else {
     	    cagui::FileEntry $f.e$i \
                 -dialogtype open \
@@ -7982,7 +7993,6 @@ if {$defaultkey == "RSA"} {
                 -variable [namespace current]::wizData(opensslexec) \
                 -title "Выберите $label" \
             $f.e$i.entry configure -style red.TEntry
-#            $f.e$i.entry configure -bg red  -highlightbackground #39b5da
 	    if {$typesys == "x11" } {
 		eval "$c.e1.but configure -command {feselect open {.cm} window {Выберите $label} $home {[namespace current]::wizData(opensslexec)} {*openssl* *ssl* *.exe *}}"
 	    }
@@ -7992,8 +8002,10 @@ if {$defaultkey == "RSA"} {
     	    incr i
     	    continue
         }
-        grid $f.l$i -row $i -column 0 -sticky w  -padx 4 -pady {0 1mm}
-        grid $f.e$i -row $i -column 1 -sticky nwse  -padx {0 5mm} -pady {0 1mm}
+	if {$defaultkey != "RSA"} {
+    	    grid $f.l$i -row $i -column 0 -sticky w  -padx 4 -pady {0 1mm}
+    	    grid $f.e$i -row $i -column 1 -sticky nwse  -padx {0 5mm} -pady {0 1mm}
+        }
         incr i
         
     }
@@ -8064,7 +8076,9 @@ if {$defaultkey == "RSA"} {
 #puts "VARNAME REZ=$wizData($varname)"
 	}
     $c.t1 insert end "Тип ключевой пары:\n" bold
-        $c.t1 insert end "\t$::ProfileDialog::prof(req.default_key.selected)\n"
+        $c.t1 insert end "\t$::ProfileDialog::prof(req.default_key.selected)"
+        $c.t1 insert end "  ($::ProfileDialog::prof(req.default_bits.selected) )\n"
+
 
 ############
     
@@ -8158,6 +8172,7 @@ proc updatewait {tt1} {
         
         #setup the CA
         array set attr [array get wizData]
+#parray attr
         set err [openssl::CreateRootCA attr]
         
         # should create this folder
@@ -8192,7 +8207,7 @@ proc updatewait {tt1} {
 # ГОСТ-параметры
 	if {$currentStep == "setup"} {
 	    set defaultpar [$this.layoutFrame.basic.clientArea.c1 get]
-	    puts "DefaultPar=$defaultpar"
+#	    puts "DefaultPar=$defaultpar"
 	} elseif {$currentStep == "dirname"} {
 	    if {$wizData(dir_ca) == ""} {
                 tk_messageBox -title $tt -message "Выберите каталог для БД УЦ." -icon error  -parent .cm
@@ -8333,11 +8348,11 @@ if { 0} {
                 tk_messageBox -title $tt -message "Укажите наименование организации (O)." -icon error  -parent .cm
                 return -code break;
             }
-    	    if {[string length $wizData(OGRN)] != 13} {
+    	    if {$wizData(OGRN) != "" &&  [string length $wizData(OGRN)] != 13} {
                 tk_messageBox -title $tt -message "Вы неполностью ввели ОГРН" -icon error  -parent .cm
                 return -code break;
     	    }
-    	    if {[string length $wizData(INN)] != 12} {
+    	    if {$wizData(INN) != "" &&  [string length $wizData(INN)] != 12} {
                 tk_messageBox -title $tt -message "Вы неполностью ввели ИНН" -icon error  -parent .cm
                 return -code break;
     	    }
@@ -8463,7 +8478,7 @@ bind .cm.certificatewizard <<WizNextStep>> {[%W namespace]::nextStep %W}
     global defaultpar
     # use nice icon
     $this widget icon configure -image img_cert  -background #eff0f1
-    #39b5da
+    #cdc7c2
 #    $this widget icon configure -image img_cert  -background #c0bab4
 
     set c [$this widget clientArea]
@@ -9104,7 +9119,7 @@ if {$wizData(wizardtype) != "csrdb"} {
     proc nextStep {this} {
         global db
         variable wizData
-puts "nextStep=.cm.certificatewizard"
+#puts "nextStep=.cm.certificatewizard"
         set currentStep [$this cget -step]
         
         if {$currentStep == "type"} {
@@ -9143,8 +9158,8 @@ puts "nextStep=.cm.certificatewizard"
         } elseif {$currentStep == "cert_name"} {
 set wizData(libp11) [Config::Get library.pkcs11]
 	    if { $wizData(ckzip11) && $wizData(libp11) == "" } {
-puts "::OptionsDialog::input(library.pkcs11)=[Config::Get library.pkcs11]"
-puts "wizData(libp11)=$wizData(libp11)"
+#puts "::OptionsDialog::input(library.pkcs11)=[Config::Get library.pkcs11]"
+#puts "wizData(libp11)=$wizData(libp11)"
 
         	tk_messageBox -title "Создание запроса в БД" -message "Не выбрана библиотека PKCS11.\n" -detail "Средства->Настройки->Типы Сертификатов->Редактировать->KeyPair" -icon error  -parent  .cm
         	return
@@ -9230,7 +9245,7 @@ bind cm.selfsignedwizard <<WizNextStep>> {[%W namespace]::nextStep %W}
     
     # use nice icon
     $this widget icon configure -image img_cert  -background #eff0f1
-    #39b5da
+    #cdc7c2
     
     set c [$this widget clientArea]
     
@@ -9609,7 +9624,7 @@ bind .cm.signwizard <<WizNextStep>> {[%W namespace]::nextStep %W}
     
     # use nice icon
     $this widget icon configure -image img_cert -background #eff0f1
-    #39b5da
+    #cdc7c2
     
     set c [$this widget clientArea]
     
@@ -9997,12 +10012,12 @@ bind cm.opendb <<WizNextStep>> {[%W namespace]::nextStep %W}
     global home
     # use nice icon
     $this widget icon configure -image img_cert -background #eff0f1
-    #39b5da
+    #cdc7c2
 #    $this widget icon configure -image img_cert -background #c0bab4
         
     set c [$this widget clientArea]
     
-puts ".cm.opendb this=$this $c"
+#puts ".cm.opendb this=$this $c"
 
     $this stepconfigure \
             -title {Выберите каталог с БД УЦ} \
@@ -10022,9 +10037,9 @@ puts ".cm.opendb this=$this $c"
     $c.e1 configure  -background white
     eval "$c.e1.but configure -command {feselect dir $c window {Выберите каталог с БД УЦ} $home {[namespace current]::wizData(dir_ca)} {}}"
 
-    label $c.l2 -text "Введите пароль для БД УЦ:" -highlightbackground #39b5da
+    label $c.l2 -text "Введите пароль для БД УЦ:" -highlightbackground #cdc7c2
     ttk::entry $c.e2 -width 40 -show * -textvariable [namespace current]::wizData(password)
-    # -highlightbackground #39b5da
+    # -highlightbackground #cdc7c2
     $c.e2 delete 0 end
 bind $c.e2 <Key-Return> {tkwizard::cmd Finish .cm.opendb}
     grid $c.l1 -row 1 -column 0 -sticky w -padx 4 -pady 3mm
@@ -10238,7 +10253,7 @@ bind .cm.exportp12wizard <<WizNextStep>> {[%W namespace]::nextStep %W}
     
     # use nice icon
     $this widget icon configure -image img_cert -background #eff0f1
-    #39b5da
+    #cdc7c2
         
     set c [$this widget clientArea]
     if {$wizData(crt_fn) == ""} {
@@ -10267,10 +10282,8 @@ bind .cm.exportp12wizard <<WizNextStep>> {[%W namespace]::nextStep %W}
 	$c.e1.entry configure -state readonly
     }
 
-            
     label $c.l2 -text "Имя файла с закрытым ключом:"
     cagui::FileEntry $c.e2 \
-	    -width 80 \
             -dialogtype open \
             -variable [namespace current]::wizData(key_fn) \
             -title \"Выбор закрытого ключа\"\]" \
@@ -10701,7 +10714,7 @@ bind .cm.revokewizard <<WizNextStep>> {[%W namespace]::nextStep %W}
 
     # use nice icon
     $this widget icon configure -image img_cert -background #eff0f1
-    #39b5da
+    #cdc7c2
     
     set c1 [$this widget clientArea]
 #scrollframe
@@ -10736,7 +10749,7 @@ if {1} {
             -posttext {Нажмите "След" для продолжения или "Отмена", если вы передумали.} 
     }
     
-puts "CHECK REVOKE=$wizData(wizardtype)"
+#puts "CHECK REVOKE=$wizData(wizardtype)"
     if {$wizData(wizardtype) == "examinebyindex"} {
 	set attributes [openssl::Request_GetInfo -filename $wizData(crt_fn) -get subject]
 	if {[lindex $attributes 1] == "" } {
@@ -10750,7 +10763,7 @@ puts "CHECK REVOKE=$wizData(wizardtype)"
     global profile_options
     array set opts [array get profile_options]
     array set fieldlabels $opts(req.dn_fields)
-puts "CHECK REVOKE2"
+#puts "CHECK REVOKE2"
 #parray fieldlabels
     set i 0
     set pp 1
@@ -10776,13 +10789,13 @@ puts "CHECK REVOKE2"
         incr i
         incr pp
     }
-puts "CHECK REVOKE3"
+#puts "CHECK REVOKE3"
     if {$wizData(wizardtype) == "examinebyindex"} {
 	ttk::button $c.b$i -text "Подробности" -command "cmd::ViewByIndexReq \"$wizData(ckaid)\""
     } else {
 	ttk::button $c.b$i -text "Подробности" -command "Dialog_ShowCertificate \"$wizData(crt_fn)\""
     }
-puts "CHECK REVOKE4"
+#puts "CHECK REVOKE4"
     grid $c.b$i -row $i -column 1 -sticky e -padx 2mm -pady 2mm
     incr i
     grid columnconfigure $c 1 -weight 1
@@ -11031,7 +11044,7 @@ proc showContextMenuReq {w x y rootx rooty} {
                 -command [list cmd::ViewByIndexCertFromReq $s]
 
         tk_popup .contextMenu $rootx $rooty
-	.contextMenu configure -activebackground #39b5da
+	.contextMenu configure -activebackground #cdc7c2
 	.contextMenu configure -background #e0e0da
 
     }
@@ -11047,7 +11060,7 @@ proc showContextMenuReqAr {w x y rootx rooty} {
         lappend s [lindex [$w item $i -value] 6]
         set tree [lindex [$w item $i -value] 0]
     }
-puts "showContextMenuReqAr=$s"
+#puts "showContextMenuReqAr=$s"
 
     if {$s != ""} {
 
@@ -11064,7 +11077,7 @@ puts "showContextMenuReqAr=$s"
 
         tk_popup .contextMenu $rootx $rooty
 
-	.contextMenu configure -activebackground #39b5da
+	.contextMenu configure -activebackground #cdc7c2
 	.contextMenu configure -background #e0e0da
 
     }
@@ -11096,7 +11109,7 @@ proc showContextMenuCRL {w x y rootx rooty} {
                 -command [list cmd::PublishByIndex $s crl]
 
         tk_popup .contextMenu $rootx $rooty
-	.contextMenu configure -activebackground #39b5da
+	.contextMenu configure -activebackground #cdc7c2
 	.contextMenu configure -background #e0e0da
 
     }
@@ -11469,7 +11482,7 @@ proc rect2window {w tw th} {
 proc About {w} {
     set title {О приложении CAFL63}
     catch {destroy $w}
-    toplevel $w -bg skyblue -bd 3
+    toplevel $w -bg #cdc7c2 -bd 3
 #Центрируем справочное окно в основном окне
     set geometr [rect2window "." "530" "480" ]
     wm geometry $w $geometr
@@ -11857,7 +11870,7 @@ proc NotebookCA {w {pages}} {
     set defaultkey "gost2012_256"
     set defaultpar "1.2.643.2.2.36.0"
 
-    ttk::style configure TButton -background #c0bab4 -relief raise -borderwidth 2 -bordercolor   #39b5da -highlightborderwidth 2 -highlightthickness 4
+    ttk::style configure TButton -background #c0bab4 -relief raise -borderwidth 2 -bordercolor   #cdc7c2 -highlightborderwidth 2 -highlightthickness 4
 
     ttk::style map TButton -background  [list active #e0e0da disabled #0000ff readonly green]
     ttk::style configure My.TFrame -background #eff0f1 -relief grooved -borderwidth 2
@@ -11868,7 +11881,7 @@ proc NotebookCA {w {pages}} {
     ttk::style configure TNotebook -background #cbccce
     #cbccce
     ttk::style configure TNotebook.Tab -background #c0bab4
-frame $parent.ff -padx 2 -pady 2 -relief flat -bd 0 -bg #39b5da
+frame $parent.ff -padx 2 -pady 2 -relief flat -bd 0 -bg #cdc7c2
 pack $parent.ff -in $parent -fill both -expand 1 -pady 1mm -padx 2mm
 set w $parent.ff.notbok
     ttk::notebook $w    -width {682} -height {418} -takefocus {}
@@ -11881,7 +11894,8 @@ set w $parent.ff.notbok
     foreach page $pages {
 	set pageTek page$i
 	set pageTek $pageTek[string range com 0 2]
-	frame $w.p$i -background skyblue -padx {0 } -pady 0 -relief flat -borderwidth 0
+#	frame $w.p$i -background skyblue -padx {0 } -pady 0 -relief flat -borderwidth 0
+	frame $w.p$i -background #cdc7c2 -padx {0 } -pady 0 -relief flat -borderwidth 0
 	if { $i == 5 } {
 	    $w.p$i configure -background white -pady 20
 #	    break
@@ -11910,7 +11924,7 @@ set w $parent.ff.notbok
 	for {set j 0} {$j <= 5} {incr j} {
 	    set tekCom "$pageTek$j"
 #	    puts "tekCom=$tekCom"
-	    set cmd "button $w.p$i.right.but$j -command {catch $tekCom} -text \"[lindex $textBut $j]\" -width 24 -bg #c0bab4 -highlightthickness 2 -relief flat -highlightbackground {#39b5da} -activebackground #eff0f1 -activeforeground black"
+	    set cmd "button $w.p$i.right.but$j -command {catch $tekCom} -text \"[lindex $textBut $j]\" -width 24 -bg #c0bab4 -highlightthickness 2 -relief flat -highlightbackground {#cdc7c2} -activebackground #eff0f1 -activeforeground black"
 	    set cmd1 [subst $cmd]
 	    eval $cmd1
 
@@ -12047,12 +12061,12 @@ proc ObjectManager {w} {
     	    . configure -menu $w.menunew
 	    menu_disable
 #	    $w.menunew.options entryconfigure 0 -state disabled
-	    $w.menunew configure -activebackground #39b5da -background #f6f5f4
+	    $w.menunew configure -activebackground #cdc7c2 -background #f6f5f4
 	    #e0e0da
-	    $w.menunew.database configure -activebackground #39b5da
-	    $w.menunew.options configure -activebackground #39b5da
-	    $w.menunew.help configure -activebackground #39b5da
-	    $w.menunew.certificates configure -activebackground #39b5da
+	    $w.menunew.database configure -activebackground #cdc7c2
+	    $w.menunew.options configure -activebackground #cdc7c2
+	    $w.menunew.help configure -activebackground #cdc7c2
+	    $w.menunew.certificates configure -activebackground #cdc7c2
 	}
     }
 
@@ -12060,7 +12074,7 @@ if {1} {
 set w1 $w
     wm geometry . +200+100;
 
-#    $parent configure -background #39b5da
+#    $parent configure -background #cdc7c2
     if {$raca == 1} {
         wm title . {Центр Регистрации УЦ-ФЗ-63}
     } else {
@@ -12068,7 +12082,7 @@ set w1 $w
     }
 #$w configure -bg #eff0f1 -padx 4 -pady 4
 #c0bab4
-#    frame $w.mainfr -relief groove -background #39b5da -bd 4 -padx 5 -pady 5
+#    frame $w.mainfr -relief groove -background #cdc7c2 -bd 4 -padx 5 -pady 5
     frame $w.mainfr -relief flat -bg #eff0f1 -bd 0 
 #Внешняя рамка
 $w configure -borderwidth 1
@@ -12084,7 +12098,7 @@ $w configure -borderwidth 1
     $w.who configure -text $zag 
     NotebookCA $w.notbok {{Запросы на сертификаты} {Архив Запросов} Сертификаты {Отозванные X509} CRL/СОС Начало}
 
-    frame $w.sep -height 2 -bd 0 -relief flat -background #39b5da
+    frame $w.sep -height 2 -bd 0 -relief flat -background #cdc7c2
      #bdeaff
      #c0bab4
 $w configure -borderwidth 1
@@ -12096,7 +12110,7 @@ $w configure -borderwidth 1
     ttk::button $w.bex -text {Выйти из УЦ} -image exitCA_16x16 -compound left -command {cmd::ExitDB}
     pack $w.bex $w.bcr $w.bcl $w.bop -side right -pady {1mm 2mm} -padx {0 2mm}
 
-puts "Wnotbok=$w"
+#puts "Wnotbok=$w"
 
 #    Certificate Request
     set db(treeReq) [ObjectListBox $w.ff.notbok.p0.left $ReqListBox req]
@@ -12459,7 +12473,7 @@ proc insertTreeCRL {v tektree } {
 }
 
 proc viewDouble {w type} {
-puts "viewDouble w=$w"
+#puts "viewDouble w=$w"
     set s {}
 #1 - поле серийного номера а надо ckaID или сам сертификат
 #    foreach i [$w curselection] 
@@ -12528,7 +12542,7 @@ proc showContextMenu {w x y rootx rooty} {
                 -command [list cmd::WizardRevokeCertificateByIndex $s $treeID]
         
         tk_popup .contextMenu $rootx $rooty
-	.contextMenu configure -activebackground #39b5da
+	.contextMenu configure -activebackground #cdc7c2
 	.contextMenu configure -background #e0e0da
 
     }
@@ -12549,8 +12563,8 @@ proc showContextMenuRev {w x y rootx rooty} {
         set tree [lindex [$w item $i -value] 0]
         lappend treeID [string range $tree 4 end]
     }
-puts "showContextMenu=$s"
-puts "treeID=$treeID" 
+#puts "showContextMenu=$s"
+#puts "treeID=$treeID" 
 
     if {$s != ""} {
         
@@ -12568,7 +12582,7 @@ puts "treeID=$treeID"
                 -command [list cmd::ViewByIndexReq $s]
         
         tk_popup .contextMenu $rootx $rooty
-	.contextMenu configure -activebackground #39b5da
+	.contextMenu configure -activebackground #cdc7c2
 	.contextMenu configure -background #e0e0da
         
     }
@@ -12604,7 +12618,7 @@ proc Log::CreateWindow {w} {
     
     # this lets us be reentrant...
     catch {destroy $w}
-    toplevel $w -bd 2  -relief flat -background #39b5da -padx 0 -pady 0 
+    toplevel $w -bd 2  -relief flat -background #cdc7c2 -padx 0 -pady 0 
     wm title $w "Протокол работы УЦ"
     wm iconphoto $w iconCert_32x32
     wm geometry $w +200+100
@@ -12777,7 +12791,7 @@ proc Dialog_ShowCertificateInfo {w title fieldvalues text certhex crtstatus} {
     array set input_values {}
     
     catch {destroy $w}
-    toplevel $w -bd 3  -relief flat -background #39b5da -padx 0 -pady 0
+    toplevel $w -bd 3  -relief flat -background #cdc7c2 -padx 0 -pady 0
 #    wm minsize $w 550 400
     set geometr [rect2window "." "550" "400" ]
     wm geometry $w $geometr
@@ -12807,7 +12821,7 @@ proc Dialog_ShowCertificateInfo {w title fieldvalues text certhex crtstatus} {
 
     pack $w.nb -expand 1 -fill both -padx 3 -pady 3
     
-    frame $w.sep -height 2 -bd 0 -relief flat -background #39b5da
+    frame $w.sep -height 2 -bd 0 -relief flat -background #cdc7c2
     pack $w.sep -fill x -pady 1mm
 
     ttk::button $w.buttclose -text "Отмена" -command "set input_values(exit) ok; destroy $w1" 
@@ -12981,7 +12995,7 @@ proc Dialog_ShowRequestInfo {w title fieldvalues text addbut fileimport} {
     array set input_values {}
     
     catch {destroy $w}
-    toplevel $w -bd 3  -relief flat -background #39b5da -padx 0 -pady 0 
+    toplevel $w -bd 3  -relief flat -background #cdc7c2 -padx 0 -pady 0 
     set geometr [rect2window "." "550" "400" ]
     wm geometry $w $geometr
   #Окно не может перекрываться (yes)
@@ -13003,7 +13017,7 @@ proc Dialog_ShowRequestInfo {w title fieldvalues text addbut fileimport} {
     pack $w.nb -expand 1 -fill both -padx 3 -pady 3
     
 #    frame $w.sep -height 2 -bd 2 -relief groove -background #c0bab4
-    frame $w.sep -height 2 -bd 0 -relief flat -background #39b5da
+    frame $w.sep -height 2 -bd 0 -relief flat -background #cdc7c2
     pack $w.sep -fill x -pady 1mm
 
     set createReq ""
@@ -13024,7 +13038,7 @@ proc Dialog_ShowRequestInfo {w title fieldvalues text addbut fileimport} {
 	if {[lindex $reqstatus  1] == "Import" } {
 	    set createReq "Запрос был импортирован"
 	}
-	puts "regDB=$reqstatus"
+#	puts "regDB=$reqstatus"
 #Просмотр при импорте
     } elseif {$addbut == 1} {
 	global typeimport
@@ -13198,7 +13212,7 @@ proc Dialog_ShowCRLInfo {w title fieldvalues text fileimport} {
 #	puts "CRL=$ss"
     }
     catch {destroy $w}
-    toplevel $w -bd 3  -relief flat -background #39b5da -padx 0 -pady 0 
+    toplevel $w -bd 3  -relief flat -background #cdc7c2 -padx 0 -pady 0 
 #Центрируем окно
     set geometr [rect2window "." "550" "400" ]
     wm geometry $w $geometr
@@ -13223,7 +13237,7 @@ proc Dialog_ShowCRLInfo {w title fieldvalues text fileimport} {
     
     set reqstatus {Рассматривается Import "Не известно" }
 
-    frame $w.sep -height 2 -bd 0 -relief flat -background #39b5da
+    frame $w.sep -height 2 -bd 0 -relief flat -background #cdc7c2
     pack $w.sep -fill x -pady 2
 
     ttk::button $w.buttclose -text "Отмена" -command "set input_values(exit) ok; destroy $w1" 
@@ -13583,7 +13597,7 @@ proc cmd::WizardCreateRequestDB {} {
     set name ".cm.certificatewizard"
     [$name namespace]::initwizard $name csrdb
     $name show
-    puts "cmd::WizardCreateRequestDB END"
+#    puts "cmd::WizardCreateRequestDB END"
 }
 
 proc cmd::WizardCreateRequest {} {
@@ -13978,7 +13992,7 @@ proc page4com0 {} {
 }
 
 proc page2com1 {} {
-puts "Просмотр корневого сертификата"
+#puts "Просмотр корневого сертификата"
     cmd::ViewByIndexCert "ca"
 }
 
@@ -14074,7 +14088,7 @@ proc page2com4 {} {
     global cancelexport
     global certdb
     global countfile
-    puts "Выгрузка новых сертификатов в SQL-дамп"
+#    puts "Выгрузка новых сертификатов в SQL-дамп"
     set dir [Config::Get web.outfolder]
     set typedb {
 	{"Формат dump"    *.dump}
@@ -14505,7 +14519,7 @@ if {[lindex $argv 0] == "-debug"} {
 # for debugging - leave this.
 set config(debug) 1
 set debug::level 1
-puts "System=$typesys"
+#puts "System=$typesys"
 # set up main screen
 #wm withdraw .
 
