@@ -2074,7 +2074,7 @@ set profile_template {
     CA_ext.nsCertType server
     CA_ext.nsCaPolicyUrl http://www.dfn-pca.de/certification/policies/x509policy.html
     CA_ext.nsComment {This certificate was issued by a Server CA}
-    CA_ext.authorityInfoAccess URI:http://museum.lissi-crypto.ru/docs/ucfz_63/CAFL63.crt
+    CA_ext.authorityInfoAccess caIssuers;URI:http://museum.lissi-crypto.ru/docs/ucfz_63/CAFL63.crt
     CA_ext.crlDistributionPoints URI:http://museum.lissi-crypto.ru/docs/ucfz_63/CAFL63.crl
 
     CA_ext.nsRevocationUrl cgi/non-CA-rev.cgi?
@@ -3614,15 +3614,23 @@ proc openssl::Profile_Unpack {profile} {
 #set prof(req.default_param) ""
     set prof(req.default_param.selected) ""
     set prof(req.default_libp11.selected) ""
-    set defaultpar $prof(req.default_param)
-    set defaultkey $prof(req.default_key)
-    set prof(req.default_param.selected) $prof(req.default_param)
+    if {[info exists prof(req.default_param)]} {
+	set defaultpar $prof(req.default_param)
+	set defaultkey $prof(req.default_key)
+	set prof(req.default_param.selected) $prof(req.default_param)
 #puts "prof(req.default_param)=$prof(req.default_param)"
-    set prof(req.default_key.selected) $prof(req.default_key)
+	set prof(req.default_key.selected) $prof(req.default_key)
 #puts "openssl::Profile_Unpack prof(req.default_param.selected)=$prof(req.default_param.selected)"
 
     #Library PKCS#11
-    set prof(req.default_libp11.selected) $prof(req.default_libp11)
+	set prof(req.default_libp11.selected) $prof(req.default_libp11)
+    } else {
+	set defaultpar ""
+	set defaultkey ""
+	set prof(req.default_param.selected) ""
+	set prof(req.default_key.selected) ""
+	set prof(req.default_libp11.selected) ""
+    }
 #puts "LIBP11_UNPACK=$prof(req.default_libp11.selected)"
 
     # Validity
