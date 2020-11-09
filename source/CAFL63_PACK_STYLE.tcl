@@ -2630,8 +2630,12 @@ proc parse_cert_gost {cert} {
 			::asn::asnGetSequence pubkey_algoid pubalgost
 #OID - параметра
 			::asn::asnGetObjectIdentifier pubalgost ret(paramkey)
+			if {$pubalgost != ""} {
 #OID - Функция хэша
-			::asn::asnGetObjectIdentifier pubalgost ret(hashkey)
+			    ::asn::asnGetObjectIdentifier pubalgost ret(hashkey)
+			} else {
+			    set ret(hashkey) ""
+			}
 #puts "ret(paramkey)=$ret(paramkey)\n"
 #puts "ret(hashkey)=$ret(hashkey)\n"
 		}
@@ -2738,9 +2742,11 @@ proc parse_csr_gost {csr} {
 #OID - параметра
 			::asn::asnGetObjectIdentifier pubalgost oid1
 #OID - Функция хэша
-			::asn::asnGetObjectIdentifier pubalgost oid2
-#puts "oid1=$oid1\n"
+			if {$pubalgost != "" } {
+			    ::asn::asnGetObjectIdentifier pubalgost oid2
 #puts "oid2=$oid2\n"
+			}
+#puts "oid1=$oid1\n"
 		}
 		default {
 			error "Unknown algorithm"

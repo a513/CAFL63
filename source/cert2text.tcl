@@ -432,7 +432,11 @@ proc parse_key_gost {pubkeyinfo_hex} {
   #OID - параметра
   ::asn::asnGetObjectIdentifier pubalgost ret(paramkey)
   #OID - Функция хэша
-  ::asn::asnGetObjectIdentifier pubalgost ret(hashkey)
+  if {$pubalgost != ""} {
+    ::asn::asnGetObjectIdentifier pubalgost ret(hashkey)
+  } else {
+    set ret(hashkey) ""
+  }
   #puts "ret(paramkey)=$ret(paramkey)\n"
   #puts "ret(hashkey)=$ret(hashkey)\n"
   #parray ret
@@ -760,7 +764,9 @@ proc cert2text {wfr nick cert_hex} {
     array set ret [parse_key_gost $cert_parse(pubkeyinfo)]
     #	parray ret
     $w insert end "\t[mc "sign param"]:\t[mc $ret(paramkey)]\n"  margins2
-    $w insert end "\t[mc "hash param"]:\t[mc $ret(hashkey)]\n"  margins2
+    if {$ret(hashkey) != "" } {
+	$w insert end "\t[mc "hash param"]:\t[mc $ret(hashkey)]\n"  margins2
+    }
     set sek 4
     if {[string range $ret(pubkey) 2 3] != 40} {
       set sek 6
