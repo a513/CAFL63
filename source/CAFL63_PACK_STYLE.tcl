@@ -2671,15 +2671,31 @@ proc parse_crl {crl} {
 }
 
 proc parse_csr_gost {csr} {
-	array set ret [list]
-	if { [string range $csr 0 13 ] == "-----BEGIN NEW" } {
-							  
-	    array set parsed_csr [::pki::_parse_pem $csr "-----BEGIN NEW CERTIFICATE REQUEST-----" "-----END NEW CERTIFICATE REQUEST-----"]
-	    set csr $parsed_csr(data)
-	} elseif { [string range $csr 0 9 ] == "-----BEGIN" } {
-	    array set parsed_csr [::pki::_parse_pem $csr "-----BEGIN CERTIFICATE REQUEST-----" "-----END CERTIFICATE REQUEST-----"]
-	    set csr $parsed_csr(data)
-	} 
+    array set ret [list]
+    set data $csr
+    set headcsr "-----BEGIN NEW CERTIFICATE REQUEST-----"
+    set tailcsr "-----END NEW CERTIFICATE REQUEST-----"
+    if {[string first "-----BEGIN " $data] != -1} {
+    #	set data [string map {"\015\012" "\n"} $data]
+	set data [string map {"\r\n" "\n"} $data]
+	if {[string first "-----BEGIN CERTIFICATE REQUEST-----" $data] != -1} {
+    	    set headcsr "-----BEGIN CERTIFICATE REQUEST-----"
+    	     set tailcsr "-----END CERTIFICATE REQUEST-----"
+	} elseif {[string first "-----BEGIN NEW CERTIFICATE REQUEST-----" $data] != -1} {
+    	    set headcsr "-----BEGIN NEW CERTIFICATE REQUEST-----"
+    	    set tailcsr "-----END NEW CERTIFICATE REQUEST-----"
+	} else {
+        return -code error "not csr"
+	}
+    #puts "HEAD=$headcsr\nTAIL=$tailcsr"
+    #puts "CERT=$data"
+    } elseif {[string range $data 0 0] != "0"} {
+	return -code error "not csr"
+    }
+
+    array set parsed_csr [::pki::_parse_pem $data $headcsr $tailcsr]
+    set csr $parsed_csr(data)
+
         set pem "-----BEGIN CERTIFICATE REQUEST-----\n"
 	set pem1 [binary encode base64 -maxlen 64 $csr]
 	set pem2 "\n-----END CERTIFICATE REQUEST-----\n"
