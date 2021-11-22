@@ -16,8 +16,14 @@ cp -f lirssl_static_x$1 ./lirssl_static
 rm -f tclpkcs11.p11
 cp -f tclpkcs11_$1.so ./tclpkcs11.p11
 echo $a
-
-../WRAP_MAC/tclexecomp64_v.1.0.4 CAFL63_PACK_STYLE.tcl tkfe.tcl breeze.tcl cert2text.tcl alloids.tcl ascii.enc lirssl_static tclpkcs11.p11 orlov_250x339.png -forcewrap  -w ../WRAP_MAC/tclexecomp_v.1.0.4.linux$1 -o CAFL63_linux$1
+if [ "$1" -eq "64 " ]
+    then 
+	../TCLEXECOMP/CUSTOM/tclexecomp64 CAFL63_PACK_STYLE.tcl tkfe.tcl breeze.tcl cert2text.tcl alloids.tcl ascii.enc lirssl_static tclpkcs11.p11 orlov_250x339.png -forcewrap  -w  ../TCLEXECOMP/CUSTOM/tclexecomp1.2.0_$1 -o CAFL63_linux$1
+fi
+if [ "$1" -eq "32 " ]
+    then 
+	../WRAP_MAC/tclexecomp64_v.1.0.4 CAFL63_PACK_STYLE.tcl tkfe.tcl breeze.tcl cert2text.tcl alloids.tcl ascii.enc lirssl_static tclpkcs11.p11 tcltls32.so orlov_250x339.png -forcewrap  -w ../WRAP_MAC/tclexecomp_v.1.0.4.linux$1 -o CAFL63_linux$1
+fi
 chmod 755 CAFL63_linux$1
 rm -f lirssl_static
 rm -f tclpkcs11.p11

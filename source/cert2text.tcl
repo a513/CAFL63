@@ -20,11 +20,10 @@ switch -- $::tcl_platform(platform) {
     font configure TkDefaultFontBold -size 8
   }
 }
+
 proc ::pki::x509::parse_cert {cert} {
   array set parsed_cert [::pki::_parse_pem $cert "-----BEGIN CERTIFICATE-----" "-----END CERTIFICATE-----"]
   set cert_seq $parsed_cert(data)
-    set finger [::sha1::sha1 $cert_seq]
-    set ret(fingerprint) $finger
 
   array set ret [list]
 
@@ -50,18 +49,15 @@ proc ::pki::x509::parse_cert {cert} {
   ::asn::asnGetSequence cert data_signature_algo_seq
   ::asn::asnGetObjectIdentifier data_signature_algo_seq ret(data_signature_algo)
   ::asn::asnGetSequence cert issuer
-#LISSI
   binary scan [::asn::asnSequence $issuer] H* ret(issuer_hex)
 
   ::asn::asnGetSequence cert validity
   ::asn::asnGetUTCTime validity ret(notBefore)
   ::asn::asnGetUTCTime validity ret(notAfter)
   ::asn::asnGetSequence cert subject
-#LISSI
   binary scan [::asn::asnSequence $subject] H* ret(subject_hex)
 
   ::asn::asnGetSequence cert pubkeyinfo
-#LISSI
   binary scan $pubkeyinfo H* ret(pubkeyinfo_hex)
 
   ::asn::asnGetSequence pubkeyinfo pubkey_algoid
@@ -77,15 +73,19 @@ proc ::pki::x509::parse_cert {cert} {
     switch -- [format {0x%02x} $peek_tag] {
       "0x81" {
         ::asn::asnGetContext cert - issuerUniqueID
+        binary scan $issuerUniqueID H* ret(issuerUniqueID)
       }
       "0x82" {
         ::asn::asnGetContext cert - subjectUniqueID
+        binary scan $issuerUniqueID H* ret(subjectUniqueID)
       }
       "0xa1" {
         ::asn::asnGetContext cert - issuerUniqID
+        binary scan $issuerUniqueID H* ret(issuerUniqueID)
       }
       "0xa2" {
         ::asn::asnGetContext cert - subjectUniqID
+        binary scan $issuerUniqueID H* ret(subjectUniqueID)
       }
       "0xa3" {
         ::asn::asnGetContext cert - extensions_ctx
@@ -122,7 +122,7 @@ proc ::pki::x509::parse_cert {cert} {
               } else {
                 set caDepth -1
               }
-              						
+                            						
               lappend ext_value $allowCA $caDepth
             }
             default {
@@ -146,7 +146,6 @@ proc ::pki::x509::parse_cert {cert} {
   set ret(notBefore) [::pki::x509::_utctime_to_native $ret(notBefore)]
   set ret(notAfter) [::pki::x509::_utctime_to_native $ret(notAfter)]
   set ret(serial_number) [::math::bignum::tostr $ret(serial_number)]
-#LISSI
   set snstr [::asn::asnBigInteger [math::bignum::fromstr $ret(serial_number)]]
   binary scan $snstr H* ret(serial_number_hex)
 
@@ -156,8 +155,8 @@ proc ::pki::x509::parse_cert {cert} {
   set ret(issuer) [_dn_to_string $issuer]
   set ret(subject) [_dn_to_string $subject]
   #My
-#  set ret(issuer_bin) $issuer
-#  set ret(subject_bin) $subject
+  #  set ret(issuer_bin) $issuer
+  #  set ret(subject_bin) $subject
 
   set ret(signature) [binary format B* $ret(signature)]
   binary scan $ret(signature) H* ret(signature)
@@ -180,6 +179,7 @@ proc ::pki::x509::parse_cert {cert} {
   }
   return [array get ret]
 }
+
 array set ::payoid1 {
   1.2.643.6.3.1.2.2 "МЭТС"
   1.2.643.6.7 "B2B и B2G"
@@ -222,10 +222,11 @@ proc asn::asnGetT61String {data_var print_var} {
 }	
 
 
-set ::pki::oids(2.5.4.42)  "givenName"
+#set ::pki::oids(2.5.4.42)  "givenName"
 set ::pki::oids(1.2.643.100.1)  "OGRN"
 set ::pki::oids(1.2.643.100.5)  "OGRNIP"
 set ::pki::oids(1.2.643.3.131.1.1) "INN"
+set ::pki::oids(1.2.643.100.4) "INNLE"
 set ::pki::oids(1.2.643.100.3) "SNILS"
 #Для КПП ЕГАИС
 set ::pki::oids(1.2.840.113549.1.9.2) "UN"
@@ -241,6 +242,7 @@ set ::pki::oids(1.2.643.7.1.1.3.3) "GOST R 34.10-2012-512 with GOSTR 34.11-2012-
 set ::pki::oids(1.2.643.100.113.1) "KC1 Class Sign Tool"
 set ::pki::oids(1.2.643.100.113.2) "KC2 Class Sign Tool"
 
+set ::listkind [list "0 - personal (Личное присутствие)" "1 - remote_cert (Электронная подпись)" "2 - remote_passport(Биометрический загранпаспорт)" "3 - remote_system (ЕСИА и ЕБС)" "Не включать в сертификат"]
 
 
 proc showTextMenu {w x y rootx rooty} {
@@ -290,6 +292,22 @@ proc chainocsp {chain_hex} {
     }
   }
   # Цепочка закончилась
+  return $ret
+}
+
+proc idkind {idkind_hex} {
+  set ret ""
+  set kind [binary format H* $idkind_hex]
+  ::asn::asnGetInteger kind idk
+  switch $idk {
+    0 { set ret [lindex $::listkind 0]}
+    1 { set ret [lindex $::listkind 1]}
+    2 { set ret [lindex $::listkind 2]}
+    3 { set ret [lindex $::listkind 3]}
+    default {
+	set ret "$idk - неизвестный тип идентификации"
+    }
+  }
   return $ret
 }
 
@@ -579,13 +597,13 @@ proc cert2text {wfr nick cert_hex} {
     array set dn_fields {
 	C "Country" ST "State" L "Locality" STREET "Adress" TITLE "Title"
 	O "Organization" OU "Organizational Unit"
-	CN "Common Name" SN "Surname" GN "Given Name" INN "INN" OGRN "OGRN" OGRNIP "OGRNIP" SNILS "SNILS" EMAIL "Email Address"
+	CN "Common Name" SN "Surname" GN "Given Name" INN "INN" INNLE "INNLE" OGRN "OGRN" OGRNIP "OGRNIP" SNILS "SNILS" EMAIL "Email Address"
 	UN "KPP"
     }
     array set dn_fields_ru {
 	C "Страна" ST "Регион" L "Местность" STREET "Адрес" TITLE "Название"
 	O "Организация" OU "Подразделение"
-	CN "Общепринятое имя" SN "Фамилия" GN "Имя, отчество" GIVENNAME "Имя,отчество" INN "ИНН" OGRN "ОГРН" OGRNIP "ОГРНИП" SNILS "СНИЛС" EMAIL "Адрес эл.почты"
+	CN "Общепринятое имя" SN "Фамилия" GN "Имя, отчество" GIVENNAME "Имя,отчество" INN "ИНН" INNLE "ИННЮЛ" OGRN "ОГРН" OGRNIP "ОГРНИП" SNILS "СНИЛС" EMAILADDRESS "Адрес эл.почты" 
 	UN "unstructuredName"
 	}
     set ::ku_options {"Цифровая подпись" "Неотрекаемость" "Шифрование ключа" "Шифрование данных" "Согласование ключа" "Подпись сертификата" "Подпись СОС/CRL" "Только шифровать" "Только расшифровать" "Аннулирование списка подписей"}
@@ -598,6 +616,10 @@ proc cert2text {wfr nick cert_hex} {
   set a [font actual TkFixedFont]
   eval "font create TkFixedMe $a"
   font configure TkFixedMe -size 8
+  if {$cert_hex == "" } {
+    tk_messageBox -title "Просмотр сертификатаINFO" -icon info -message "Не задан сертификат\nnick=$nick\n"
+    return "" 
+  }
 
   array set cert_parse []
   if { [string range "$cert_hex" 0 9 ] == "-----BEGIN" } {
@@ -632,7 +654,6 @@ proc cert2text {wfr nick cert_hex} {
   } else {
     unset -nocomplain cert_parse
     set file $cert_hex
-                	
     set fd [open $file]
     chan configure $fd -translation binary
     set data [read $fd]
@@ -675,8 +696,32 @@ proc cert2text {wfr nick cert_hex} {
   $w configure -yscrollcommand [list $wfr.vsb set]
 
   $w tag configure tagAbout -foreground blue -font {Times 10 bold italic}
-
+#############Cert2Text###################################
 #  parray cert_parse
+  $w insert end [mc "Issued Certificate"] bold
+  $w insert end "\n"
+  $w insert end "\t[mc "Version"]:\t$cert_parse(version)\n"  margins1
+  set ::sncert "$cert_parse(serial_number)"
+  set sn_bin [::asn::asnBigInteger [math::bignum::fromstr $cert_parse(serial_number)]]
+  set sn_bin [string range $sn_bin 2 end]
+  binary scan $sn_bin H* sn_hex
+
+  $w insert end "\t[mc "Serial Number"] (hex):\t[edithex $sn_hex]\n"  margins1
+  $w insert end "\t[mc "Serial Number"] (dec):\t$cert_parse(serial_number)\n"  margins1
+  set ::notafter  $cert_parse(notAfter)
+  set t $cert_parse(notAfter)
+  #puts "T=$t"
+  set notafter [clock format $t -format "%d/%m/%Y %R %Z"]
+  set ::notbefore $cert_parse(notBefore)
+  set t $cert_parse(notBefore)
+  #puts "T=$t"
+
+#  $w insert end [mc "Validity"] bold
+#  $w insert end "\n"
+  set notbefore [clock format $t -format "%d/%m/%Y %R %Z"]
+  $w insert end "\t[mc "Not Valid Before"]:\t$notbefore\n"  margins1
+  $w insert end "\t[mc "Not Valid After"]:\t$notafter\n"  margins1
+  set ver [mc "Expires"]
   #    puts  $cert_parse(subject)
   set ::subjectcert "$cert_parse(subject)"
   set lsub [split $cert_parse(subject) ","]
@@ -688,7 +733,7 @@ proc cert2text {wfr nick cert_hex} {
   foreach a $lsub {
     set ind [string first "=" $a]
     if {$ind == -1 } { continue }
-                	
+                    	
     set oidsub [string trim [string range $a 0 $ind-1]]
     if {[info exists dn_fields_ru($oidsub)]} {
       set nameoid "$dn_fields_ru($oidsub)"
@@ -704,6 +749,9 @@ proc cert2text {wfr nick cert_hex} {
 
     if {$oidsub == "GIVENNAME"} {
       set oidsub "GV"
+    }
+    if {$oidsub == "EMAILADDRESS"} {
+      set oidsub "EMAIL"
     }
     set oidsub "$nameoid ($oidsub)"
     #	set oidsub "$oidsub$nameoid"
@@ -731,31 +779,17 @@ proc cert2text {wfr nick cert_hex} {
     if {$oidsub == "CN"} {
       set ::cn_issuer  $oidval
     }
+    if {$oidsub == "GIVENNAME"} {
+      set oidsub "GV"
+    }
+    if {$oidsub == "EMAILADDRESS"} {
+      set oidsub "EMAIL"
+    }
 
     set oidsub "$nameoid ($oidsub)"
     #	set oidsub "$oidsub$nameoid"
     $w insert end "\t$oidsub\t$oidval\n"  margins1
   }
-  $w insert end [mc "Issued Certificate"] bold
-  $w insert end "\n"
-  $w insert end "\t[mc "Version"]:\t$cert_parse(version)\n"  margins1
-  set ::sncert "$cert_parse(serial_number)"
-  set sn_bin [::asn::asnBigInteger [math::bignum::fromstr $cert_parse(serial_number)]]
-  set sn_bin [string range $sn_bin 2 end]
-  binary scan $sn_bin H* sn_hex
-  $w insert end "\t[mc "Serial Number"] (hex):\t[edithex $sn_hex]\n"  margins1
-  $w insert end "\t[mc "Serial Number"] (dec):\t$cert_parse(serial_number)\n"  margins1
-  set ::notafter  $cert_parse(notAfter)
-  set t $cert_parse(notAfter)
-  #puts "T=$t"
-  set notafter [clock format $t -format "%d/%m/%Y %R %Z"]
-  set ::notbefore $cert_parse(notBefore)
-  set t $cert_parse(notBefore)
-  #puts "T=$t"
-  set notbefore [clock format $t -format "%d/%m/%Y %R %Z"]
-  $w insert end "\t[mc "Not Valid Before"]:\t$notbefore\n"  margins1
-  $w insert end "\t[mc "Not Valid After"]:\t$notafter\n"  margins1
-  set ver [mc "Expires"]
   $w insert end [mc "Public Key Info"] bold
   $w insert end "\n"
   if {[string range $cert_parse(pubkey_algo) 0 7] == "1.2.643." || [string range $cert_parse(pubkey_algo) 0 7] == "ГОСТ Р 3" || [string range $cert_parse(pubkey_algo) 0 7] == "GOST R 3"} {
@@ -764,8 +798,8 @@ proc cert2text {wfr nick cert_hex} {
     array set ret [parse_key_gost $cert_parse(pubkeyinfo)]
     #	parray ret
     $w insert end "\t[mc "sign param"]:\t[mc $ret(paramkey)]\n"  margins2
-    if {$ret(hashkey) != "" } {
-	$w insert end "\t[mc "hash param"]:\t[mc $ret(hashkey)]\n"  margins2
+    if {$ret(hashkey) != ""} {
+      $w insert end "\t[mc "hash param"]:\t[mc $ret(hashkey)]\n"  margins2
     }
     set sek 4
     if {[string range $ret(pubkey) 2 3] != 40} {
@@ -774,17 +808,12 @@ proc cert2text {wfr nick cert_hex} {
     set pk [edithex [string range $ret(pubkey) $sek end]]
     $w insert end "\t[mc "Public Key"]:\t$pk\n"  margins11
     #Идентификатор ключа получателя
-#    set pk_bin [binary format H* $ret(pubkey)]
-#Это код для lcc_sha - у нег возврат в бинарном виде. ::sha1::sha1 возвращает в hex
-#    set pkcs11id_bin [lcc_sha1 $pk_bin]
-#    binary scan $pkcs11id_bin H* ::pkcs11id
-##############
-#    set pkcs11id_bin [::sha1::sha1 $pk_bin]
-#    set ::pkcs11id  $pkcs11id_bin
+    set pk_bin [binary format H* $ret(pubkey)]
+    set ::pkcs11id [::sha1::sha1  $pk_bin]
   } else {
     if {[string range $cert_parse(pubkey_algo) 0 2] == "rsa" } {
-#      set pkcs11id_bin [::sha1::sha1 [binary format H* $cert_parse(pubkey)]]
-#      binary scan $pkcs11id_bin H* ::pkcs11id
+      set pkcs11id_bin [binary format H* $cert_parse(pubkey)]
+      set ::pkcs11id [::sha1::sha1 $pkcs11id_bin]
       $w insert end "\t[mc "Key Algorithm"]:\tRSA\n"  margins1
       $w insert end "\t[mc "Key Size"]:\t$cert_parse(l)\n"  margins2
       $w insert end "\t[mc "Public Key"]:\t[edithex $cert_parse(pubkey)]\n"  margins11
@@ -793,10 +822,20 @@ proc cert2text {wfr nick cert_hex} {
       $w insert end "\t[mc "Key Info"]:\t[edithex $cert_parse(pubkeyinfo)]\n" margins11
     }
   }
+#UniqueID
+  if {[info exists cert_parse(subjectUniqueID)]} {
+	$w insert end [mc "Subject Unique ID:"] bold
+	$w insert end "\t\t$cert_parse(subjectUniqueID)\n"  margins1
+  }
+  if {[info exists cert_parse(issuerUniqueID)]} {
+	$w insert end [mc "Issuer Unique ID:"] bold
+	$w insert end "\t\t$cert_parse(issuerUniqueID)\n"  margins1
+  }
   array set extcert $cert_parse(extensions)
+    $w insert end [mc "          Расширения сертификата (Extensions)\n"] bold
   #    parray extcert
   if {[info exists extcert(id-ce-basicConstraints)]} {
-    $w insert end [mc "Basic Constraints"] bold
+    $w insert end [mc "Basic Constraints (2.5.29.19)"] bold
     $w insert end "\n"
     set basic $extcert(id-ce-basicConstraints)
     #	puts $basic
@@ -827,7 +866,7 @@ proc cert2text {wfr nick cert_hex} {
   if {[info exists extcert(1.2.643.100.112)]} {
     #issuerSignTools
     array set pol [issuerpol [lindex $extcert(1.2.643.100.112) 1]]
-    $w insert end [mc "issuerSignTool"] bold
+    $w insert end [mc "issuerSignTool (1.2.643.100.112)"] bold
     $w insert end "\n"
     $w insert end "\t[mc "Name CKZI"]:\t$pol(isspol1)\n"  margins1
     $w insert end "\t[mc "Name CA"]:\t$pol(isspol2)\n"  margins1
@@ -839,14 +878,14 @@ proc cert2text {wfr nick cert_hex} {
   if {[info exists extcert(1.2.643.100.111)]} {
     #subjectSignTools
     array set pol [subjectpol [lindex $extcert(1.2.643.100.111) 1]]
-    $w insert end [mc "subjectSignTool"] bold
+    $w insert end [mc "subjectSignTool (1.2.643.100.111)"] bold
     $w insert end "\n"
     $w insert end "\t[mc "User CKZI"]:\t$pol(isspol1)\n"  margins1
     #	parray pol
     unset extcert(1.2.643.100.111)
   }
   if {[info exists extcert(id-ce-keyUsage)]} {
-    $w insert end [mc "Key Usage"] bold
+    $w insert end [mc "Key Usage (2.5.29.15)"] bold
     $w insert end "\n"
 
     set ku [extku [lindex $extcert(id-ce-keyUsage) 1]]
@@ -864,7 +903,7 @@ proc cert2text {wfr nick cert_hex} {
     unset extcert(id-ce-keyUsage)
   }
   if {[info exists extcert(id-ce-certificatePolicies)]} {
-    $w insert end [mc "Certificate Policies"] bold
+    $w insert end [mc "Certificate Policies (2.5.29.32)"] bold
     $w insert end "\n"
     set lpol [extpol [lindex $extcert(id-ce-certificatePolicies) 1]]
     $w insert end "\t[mc "Policy Name"]:\t[mc [::pki::_oid_number_to_name [lindex $lpol 0]]]\n"  margins1
@@ -881,14 +920,14 @@ proc cert2text {wfr nick cert_hex} {
     unset extcert(id-ce-certificatePolicies)
   }
   if {[info exists extcert(id-ce-subjectKeyIdentifier)]} {
-    $w insert end [mc "Subject Key Identifier"] bold
+    $w insert end [mc "Subject Key Identifier (2.5.29.14)"] bold
     $w insert end "\n"
     $w insert end "\t[mc "Key ID"]:\t[edithex [string range [lindex $extcert(id-ce-subjectKeyIdentifier) 1] 4 end]]\n"  margins1
     #	set ::pkcs11id [string range [lindex $extcert(id-ce-subjectKeyIdentifier) 1] 4 end]
     unset extcert(id-ce-subjectKeyIdentifier)
   }
   if {[info exists extcert(id-ce-privateKeyUsagePeriod) ]} {
-    $w insert end [mc "Key Usage Period"] bold
+    $w insert end [mc "Key Usage Period (2.5.29.16)"] bold
     $w insert end "\n"
     array set keyperiod [keyperiod [lindex $extcert(id-ce-privateKeyUsagePeriod) 1]]
     #	parray keyperiod
@@ -916,7 +955,7 @@ proc cert2text {wfr nick cert_hex} {
     unset extcert(id-ce-privateKeyUsagePeriod)
   }
   if {[info exists extcert(id-ce-authorityKeyIdentifier) ]} {
-    $w insert end [mc "Certificate Authority Key Identifier"] bold
+    $w insert end [mc "Certificate Authority Key Identifier (2.5.29.35)"] bold
     $w insert end "\n"
     array set autkey [autkeyid [lindex $extcert(id-ce-authorityKeyIdentifier) 1]]
     $w insert end "\t[mc "Key ID"]:\t[edithex $autkey(authKeyID)]\n"  margins1
@@ -929,7 +968,7 @@ proc cert2text {wfr nick cert_hex} {
     unset extcert(id-ce-authorityKeyIdentifier)
   }
   if {[info exists extcert(2.5.29.37) ]} {
-    $w insert end [mc "Extended Key Usage"] bold
+    $w insert end [mc "Extended Key Usage (2.5.29.37)"] bold
     $w insert end "\n"
     set listusage [extkeyuse [lindex $extcert(2.5.29.37) 1]]
     set oidt [string map {" " "."} [lindex $listusage 0]]
@@ -958,7 +997,7 @@ proc cert2text {wfr nick cert_hex} {
   }
   set ::chaincert ""
   if {[info exists extcert(1.3.6.1.5.5.7.1.1)]} {
-    $w insert end [mc "Authority information Accesss"] bold
+    $w insert end [mc "Authority information Accesss (1.3.6.1.5.5.7.1.1)"] bold
     $w insert end "\n"
     set listchain [chainocsp [lindex $extcert(1.3.6.1.5.5.7.1.1) 1]]
     #	puts $listchain
@@ -972,7 +1011,7 @@ proc cert2text {wfr nick cert_hex} {
 
   set ::crlfile ""
   if {[info exists extcert(2.5.29.31)]} {
-    $w insert end "CRL Distribution Points" bold
+    $w insert end "CRL Distribution Points (2.5.29.31)" bold
     $w insert end "\n"
     #	puts "CRL=$extcert(2.5.29.31)"
     set listcrl [crlpoints [lindex $extcert(2.5.29.31) 1]]
@@ -986,7 +1025,7 @@ proc cert2text {wfr nick cert_hex} {
   #extcert(id-ce-issuerAltName)          = false 3000
   #extcert(id-ce-subjectAltName)
   if {[info exists extcert(id-ce-issuerAltName)]} {
-    $w insert end [mc "Issuer Alt Name"] bold
+    $w insert end [mc "Issuer Alt Name (2.5.29.18)"] bold
     $w insert end "\n"
     #	puts "ALT ISSUER=$extcert(id-ce-issuerAltName)"
     set listalt [altname [lindex $extcert(id-ce-issuerAltName) 1]]
@@ -996,7 +1035,7 @@ proc cert2text {wfr nick cert_hex} {
     unset extcert(id-ce-issuerAltName)
   }
   if {[info exists extcert(id-ce-subjectAltName)]} {
-    $w insert end [mc "Subject Alt Name"] bold
+    $w insert end [mc "Subject Alt Name (2.5.29.17)"] bold
     $w insert end "\n"
     #	puts "ALT=$extcert(id-ce-subjectAltName)"
     set listalt [altname [lindex $extcert(id-ce-subjectAltName) 1]]
@@ -1005,20 +1044,38 @@ proc cert2text {wfr nick cert_hex} {
     }
     unset extcert(id-ce-subjectAltName)
   }
+  if {[info exists extcert(1.2.643.100.114)]} {
+#IdentificationKind - как выдавался сертификат
+    $w insert end "Identification Kind (1.2.643.100.114)" bold
+    $w insert end "\n"
+    #	puts "CRL=$extcert(2.5.29.31)"
+    set ikind [idkind [lindex $extcert(1.2.643.100.114) 1]]
+#    set crit [lindex $extcert(1.2.643.100.114) 0]
+    if {[lindex $extcert(1.2.643.100.114) 0] == 1} {
+      set crit [mc "Yes"]
+    } else {
+      set crit [mc "No"]
+    }
+    $w insert end "\tType Identification Kind:\t$ikind\n"  margins1
+    $w insert end "\t[mc "Critical"]:\t$crit\n"  margins1
+    unset extcert(1.2.643.100.114)
+  }
 
   set listext [array get extcert]
   foreach {a b} $listext {
-    $w insert end [mc "Extension"] bold
+    $w insert end [mc "Extension ($a)"] bold
     $w insert end "\n"
-    $w insert end "\t[mc "Identifier"]:\t$a\n"  margins1
+#    $w insert end "\t[mc "Identifier"]:\t$a\n"  margins1
     $w insert end "\t[mc "Value"]:\t[edithex [lindex $b 1]]\n"  margins1
     if {[lindex $b 0] == 1} {
       set critcert [mc "Yes"]
     } else {
       set critcert [mc "No"]
     }
+#    set critcert [lindex $b 0]
     $w insert end "\t[mc "Critical"]:\t$critcert\n"  margins1
   }
+  $w insert end [mc "          Расширения сертификата (Extensions) исчерпаны\n"] bold
 
   $w insert end [mc "Signature"] bold
   $w insert end "\n"
@@ -1029,13 +1086,9 @@ proc cert2text {wfr nick cert_hex} {
   $w insert end "\n"
 
   set fingerprint_sha256 [::sha2::sha256 $::dercert]
-  set fingerprint_sha1_bin [::sha1::sha1  $::dercert]
-#Это код для lcc_sha - у негo возврат в бинарном виде. ::sha1::sha1 возвращает в hex
-#  set fingerprint_sha1_bin [lcc_sha1  $::dercert]
-#  binary scan $fingerprint_sha1_bin H* fingerprint_sha1
-#  $w insert end "\t[mc "SHA1"]:\t[edithex $fingerprint_sha1]\n"  margins11
+  set fingerprint_sha1 [::sha1::sha1  $::dercert]
 
-  $w insert end "\t[mc "SHA1"]:\t[edithex $fingerprint_sha1_bin]\n"  margins11
+  $w insert end "\t[mc "SHA1"]:\t[edithex $fingerprint_sha1]\n"  margins11
   $w insert end "\t[mc "SHA256"]:\t[edithex $fingerprint_sha256]\n"  margins11
 
 }

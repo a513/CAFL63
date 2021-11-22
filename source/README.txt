@@ -10,6 +10,6 @@ tcl-враппер tclexecomp (версия 1.0.4 и выше, http://tclexecomp
 
 $BUILD_BIN_CAFL63_FOR_LINUX.sh 32
 
-$BUILD_BIN_CAFL63_FOR_WIN_UTF8.sh 64
+$BUILD_BIN_CAFL63_FOR_WIN_TclExecomp.sh 64
 
 Цифры 32 и 64 определяют разряднось платформы, для которой собирается дистрибутив.
