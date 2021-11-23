@@ -335,6 +335,8 @@ proc list_to_dn_tc26 {name} {
       } else {
         set asnValue [::asn::asnUTF8String $value]
       }
+#В OpenSSL используется emailAddress
+      set oid_name "emailAddress"
     } elseif {![regexp {[^ A-Za-z0-9'()+,.:/?=-]} $value]} {
       set asnValue [::asn::asnPrintableString $value]
     } else {
@@ -1864,6 +1866,11 @@ namespace eval Config {
     filetype.liblinux_default .so
     filetype.liblinux {
       {{Library PKCS#11} {.so}}
+      {{All Files} *}
+    }
+    filetype.libmacos_default .dylib
+    filetype.libmacos {
+      {{Library PKCS#11} {.dylib}}
       {{All Files} *}
     }
     library.pkcs11	""
@@ -6128,6 +6135,7 @@ proc ProfileDialog::Create {w profilename} {
   global userroles
   global typesys
   global home
+  global macos
 
   variable opts
   variable prof
@@ -6280,7 +6288,11 @@ proc ProfileDialog::Create {w profilename} {
   label $f.lb11 -text "Библиотека PKCS#11:"
   set typedef ""
   set libtyp ""
-  if {$typesys != "win32" } {
+  if {$macos == 1} {
+    set typedef [Config::Get filetype.libmacos_default]
+    set libtyp [Config::Get filetype.libmacos]
+    set libtyp ""
+  } elseif {$typesys != "win32" } {
     set typedef [Config::Get filetype.liblinux_default]
     set libtyp [Config::Get filetype.liblinux]
   } else {
@@ -6290,7 +6302,7 @@ proc ProfileDialog::Create {w profilename} {
   cagui::FileEntry $f.eb11 \
   -dialogtype open \
   -initialdir $home \
-  -variable ::OptionsDialog::input(library.pkcs11) \
+  -variable ::ProfileDialog::prof(req.default_libp11.selected) \
   -title "Выберите библиотеку PKCS#11" \
   -width 60 \
   -defaultextension $typedef \
@@ -6686,11 +6698,16 @@ proc ProfileDialog::ButtonOK {} {
   global defaultkey
   global defaultpar
   #puts "WINDOWNAME=$windowname"
+if {0} {
   if { $::ProfileDialog::input(formatKey.override) == 0 } {
     set ::ProfileDialog::prof(req.default_libp11.selected) ""
   } else {
     set ::ProfileDialog::prof(req.default_libp11.selected) $::OptionsDialog::input(library.pkcs11)
   }
+}
+#Читаем путь в библиотеке PKCS#11
+  set ::ProfileDialog::prof(req.default_libp11.selected) [$windowname.mainfr.f.n.f1.eb11.entry get]
+
   #puts "LIBP11=$::ProfileDialog::prof(req.default_libp11.selected)"
   set defaultkey [$windowname.mainfr.f.n.f1.ckey get]
   set ::ProfileDialog::prof(req.default_key.selected) [$windowname.mainfr.f.n.f1.ckey get]
@@ -9447,7 +9464,7 @@ bind .cm.certificatewizard <<WizNextStep>> {[%W namespace]::nextStep %W}
   set wizData(libp11) [Config::Get library.pkcs11]
 
   if {$wizData(ckzip11) && $wizData(libp11) != "" } {
-  set reqok "Запрос сохранен в БД.\nКлюч находится на токене. Заберите его."
+  set reqok "Запрос сохранен в БД.\nКлюч находится на токене. \nИзвлеките Токен до выпуска сертификата."
   #                tk_messageBox -title "Создание запроса в БД" -message "Пожалуйств, проверьте, что токен подключен."  -detail "ПОДПИСЬ ПОКА НЕ РЕАЛИЗОВАНА на токене!!!" -icon info  -parent  .cm
   set ret [CreateRequestTCL $profile attr]
   if {$ret == ""} {
@@ -14276,7 +14293,7 @@ proc cmd::WizardCreateSelfSigned {} {
 proc cmd::PublishByIndex {idcerts type} {
   set pubtit "Экспорт сертификата"
   set initf ""
-  set dir [Config::Get folder.certificates]
+  set dir ""
   foreach idcert $idcerts {
     switch -- $type {
       "cert" {
@@ -14287,6 +14304,7 @@ proc cmd::PublishByIndex {idcerts type} {
           {"Формат PEM"    *.crt}
           {"Любой файл"  *}
         }
+	set dir [Config::Get folder.certificates]
       }
       "req" {
         set title "Выберите файл для запроса"
@@ -14296,6 +14314,7 @@ proc cmd::PublishByIndex {idcerts type} {
           {"Формат PEM"    *.csr}
           {"Любой файл"  *}
         }
+	set dir [Config::Get folder.requests]
       }
       "crl" {
         set dir [Config::Get folder.crls]
@@ -14309,6 +14328,7 @@ proc cmd::PublishByIndex {idcerts type} {
           {"Любой файл"  *}
         }
         set cert [openssl::Object_GetPEMforCKAID $idcert $type]
+	set dir [Config::Get folder.crls]
       }
       default {
         tk_messageBox -title "Экспорт" -icon error -message "Экспорт неизвестного объекта ($type).\n" -parent .cm
@@ -14316,6 +14336,7 @@ proc cmd::PublishByIndex {idcerts type} {
       }
     }
     #    puts "PubCERT=$idcert"
+#    set file [tk_getSaveFile -title $title -filetypes $typedb -initialdir $dir -initialfile $initf -parent .cm]
     set file [tk_getSaveFile -title $title -filetypes $typedb -initialdir $dir -initialfile $initf -parent .cm]
     if {$file == ""} {
       tk_messageBox -title "$pubtit" -icon error -message "Файл не выбран.\n" -parent .cm
@@ -14338,7 +14359,7 @@ proc cmd::PKCS12ByIndex {idcerts} {
     set sn [format %x $ser_num]
     set initf "$sn.pem"
     set filep12 [file join $dir $initf]
-    puts "P12_SN=$filep12"
+#    puts "P12_SN=$filep12"
     set fd [open $filep12  w]
     puts  $fd $cert
     close $fd
@@ -14796,7 +14817,7 @@ proc cmd::ImportRequest {} {
   set crt_fn [cagui::FileDialog -dialogtype open \
   -defaultextension [Config::Get filetype.request] \
   -filetypes [Config::Get filetype.request] \
-  -initialdir $env(HOME) \
+  -initialdir [Config::Get folder.requests] \
   -initialfile [::Config::Get folder.requests] \
   -title "Выберите файл для импорта запроса" ]
 
