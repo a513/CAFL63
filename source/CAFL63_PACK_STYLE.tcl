@@ -1,12 +1,12 @@
 package require Tk
 package require sqlite3
 package require pki
+package require dns
 package require cmdline
 package require csv
 package require base64
 package require http
 package require msgcat
-
 
 global typesys
 set typesys [tk windowingsystem]
@@ -16,12 +16,21 @@ if {$typesys == "win32" } {
 } else {
   wm geometry . 850x575+300+105
 }
+global sAltName
+set sAltName ""
 global home
+set ::tekdns 0
+set ::tekip 0
+set ::tekemail 0
+set ::Listedns {""}
+set ::Listeip {""}
+set ::Listeemail {""}
+
 set ::yearcert 1
 set ::typeIdKind 4
 set ::identkind "DER:02:01:00"
 set ::strkind "#1.2.643.100.114 = $::identkind"
-set home $env(HOME)
+set home $::env(HOME)
 global macos
 set macos 0
 switch $typesys {
@@ -245,7 +254,8 @@ proc waitevent {w {interval 20}} {
 proc readdistr {urldistr w} {
   global typesys
   global home
-  set dir [tk_chooseDirectory -initialdir $home -title "Каталог для дистрибутива" -parent $w]
+#  set dir [tk_chooseDirectory -initialdir $home -title "Каталог для дистрибутива" -parent $w]
+  set dir [FE::fe_choosedir -initialdir $home -title "Каталог для дистрибутива"]
   if {$typesys == "win32" } {
     if { "after#" == [string range $dir 0 5] } {
       set dir ""
@@ -705,42 +715,22 @@ proc feselect {tdialog c typew titul tekdir var msk } {
 
   switch -- $tdialog {
     "open"        {
-      set vrr [FE::fe_getopenfile $typew "$c.sfile" $tekdir $msk]
+#      set vrr [FE::fe_getopenfile $typew "$c.sfile" $tekdir $msk]
+      set vrr1 [FE::fe_getopenfile -typew $typew -widget "$c.sfile" -initialdir $tekdir -filetypes $msk]
     }
     "save" {
     }
     "dir" {
-      set vrr [FE::fe_choosedir $typew "$c.sfile" $tekdir]
+#      set vrr [FE::fe_choosedir $typew "$c.sfile" $tekdir]
+      set vrr1 [FE::fe_choosedir -typew $typew -widget "$c.sfile" -initialdir $tekdir]
     }
     default {
       tk_messageBox -title "Файловый проводник" -icon info -message "Неизвестная операция=$tdialog"
       return
     }
   }
-
-  set fm "$c.sfile"
-  $fm.titul.lab configure -text $titul
-
-  #  puts "vrr=$vrr"
-  if {$typew == "frame"} {
-    tk busy hold ".cm.opendb"
-
-    place $c.sfile -in .cm.mainfr.who  -relx 0.12 -rely 4.0  -relwidth 0.75
-    $c.sfile configure -relief flat -bd 0 -bg white  -highlightbackground #c0bab4 -highlightthickness 5
-    raise $c.sfile
-  } else {
-    wm minsize "$c.sfile" 400  400
-  }
-  #  puts "wait ::otv"
-  vwait $vrr
-  ###################
-  #  puts "var=$var"
-  #  puts "subst=[subst $$vrr]"
-  set $var [subst $$vrr]
-  if {$typew == "frame"} {
-    tk busy forget ".cm.opendb"
-  }
-  return [subst $$vrr]
+  set $var $vrr1
+#  return $vrr1
 }
 
 proc menu_disable {} {
@@ -2242,7 +2232,6 @@ set profile_test {
   req.distinguished_name  req_distinguished_name
 
 }
-
 set config_file_template {
   [ req ]
   default_bits        = $prof(req.default_bits)
@@ -2281,6 +2270,12 @@ set config_file_template {
   [ policy_anything ]
   $prof(line.policy)
 
+  [crl_ext]
+  authorityKeyIdentifier   = keyid,issuer:always
+
+  [ req_ext ]
+  subjectAltName           = $sAltName
+
   [ cert_ext ]
   $::strkind
   #1.2.643.100.114		= $::identkind
@@ -2301,7 +2296,9 @@ set config_file_template {
   #extKeyUsage                 = serverAuth
   subjectKeyIdentifier     = hash
   authorityKeyIdentifier   = keyid,issuer:always
-  subjectAltName           = email:copy
+#  subjectAltName           = email:copy
+  subjectAltName           = $sAltName
+
   issuerAltName            = issuer:copy
   $prof(line.authorityInfoAccess)
   #authorityInfoAccess caIssuers;URI:http://museum.lissi-crypto.ru/docs/ucfz_63/CAFL63.crt,OCSP;URI:http://museum.lissi-crypto.ru/docs/ucfz_63:2560
@@ -2451,7 +2448,7 @@ namespace eval openssl {
 
   set cmd(crt_pem2der) {"$openssl" x509 -inform PEM -in "$attr(crt_fn)" -outform DER -out "$attr(crt_fn)"}
   set cmd(revoke) {"$openssl" ca -config $::config_cfg -passin env:capassword -revoke "$attr(crt_fn)"}
-  set cmd(gencrl) {"$openssl" ca -config $::config_cfg -gencrl -passin env:capassword }
+  set cmd(gencrl) {"$openssl" ca -config $::config_cfg -gencrl -passin env:capassword -crlexts crl_ext }
   set cmd(exportpkcs12) {"$openssl" pkcs12 -export -in "$attr(crt_fn)" -inkey "$attr(key_fn)" -certfile "$prof(CA.certificate)" -name "$attr(username)" -caname "$attr(caname)" -out "$attr(p12_fn)" -passin env:keypassword -passout env:password}
   set cmd(exportpkcs12_gost) {"$openssl" pkcs12 -export -certpbe "gost89" -keypbe "gost89" -macalg "md_gost94" -in "$attr(crt_fn)"  -inkey "$attr(key_fn)" -certfile "$prof(CA.certificate)" -name "$attr(username)" -caname "$attr(caname)" -out "$attr(p12_fn)" -passin env:keypassword -passout env:password}
   set cmd(selfsignedcert) {"$openssl" req -new -x509 -days 3650 -config $::config_cfg -key "$attr(key_fn)" -passin env:keypassword -outform $attr(outform) -out "$attr(crt_fn)"}
@@ -3209,7 +3206,7 @@ proc page3com1 {} {
 
   foreach rev [certdb eval {select certDBRev.ckaID from certDBRev}] {
     certdb eval {select * from certDB where certDB.ckaID = $rev} vals {
-      puts $fd "$vals(state)\t$vals(notAfter)\t$vals(dateRevoke)\t$vals(sernum)\t\"unknown\"\t$vals(subject)"
+      puts $fd "$vals(state)\t$vals(notAfter)Z\t$vals(dateRevoke)Z\t$vals(sernum)\t\"unknown\"\t$vals(subject)"
     }
     #puts "TAB=$vals(state)\t$vals(notAfter)\t$vals(dateRevoke)\t$vals(sernum)\t\"unknown\"\t$vals(subject)"
   }
@@ -3807,6 +3804,7 @@ proc openssl::Profile_Unpack {profile} {
 #
 
 proc openssl::ConfigFile_Create {profilename attributes} {
+    global sAltName
 
   variable cfg
   upvar $attributes attr
@@ -3930,6 +3928,7 @@ proc openssl::docommand {action profilename attributes} {
   variable openssl_executable
   global defaultkey
   global defaultpar
+  global sAltName
 
   #variable current_profile
   #array set prof $current_profile
@@ -3979,6 +3978,16 @@ proc openssl::docommand {action profilename attributes} {
     #	puts "Command=$command"
   } else {
     set command [subst $cmd($action)]
+    if {$action == "newreqdb" } {
+	set ::Listedns {""}
+	set ::Listeip {""}
+	set ::Listeemail {""}
+#puts "parray attr"
+#parray attr
+	if {$attr(ssl) == 1 && $sAltName != ""} {
+	    append command " -reqexts req_ext"
+	}
+    }
   }
   #set command [subst $cmdstring]
   Log::LogMessage "\[OPENSSL\] $command" bold
@@ -5957,9 +5966,11 @@ proc OptionsDialog::DeleteProfile {w} {
 proc OptionsDialog::ChooseFolder {varname} {
   upvar $varname v
   if {$v != ""} {
-    set folder [tk_chooseDirectory -initialdir $v]
+#    set folder [tk_chooseDirectory -initialdir $v]
+    set folder [FE::fe_choosedir -initialdir $v]
   } else  {
-    set folder [tk_chooseDirectory]
+#    set folder [tk_chooseDirectory]
+    set folder [FE::fe_choosedir]
   }
   if {$folder!=""} {
     set v $folder
@@ -6778,7 +6789,10 @@ namespace eval cagui {
 
 proc cagui::FileDialog {args} {
 
-  set validopts {-dialogtype -defaultextension -filetypes -title -variable -initialdir -command -parent}
+#  set validopts {-dialogtype -defaultextension -filetypes -title -variable -initialdir -command -parent}
+#  set passingopts {-defaultextension -filetypes -title -initialdir -initialfile -parent}
+  set validopts {-dialogtype -defaultextension -filetypes -title -variable -initialdir -command -parent \
+    -typew -widget -details -width -height -hidden -sepfolders -foldersfirst}
   set passingopts {-defaultextension -filetypes -title -initialdir -initialfile -parent}
 
   # parse arguments
@@ -6821,15 +6835,26 @@ proc cagui::FileDialog {args} {
 
   if {[info exists opts(-dialogtype)]} {
     if {$opts(-dialogtype)=="open"} {
-      set command "tk_getOpenFile -parent .cm"
+#      set command "tk_getOpenFile -parent .cm"
+      set command "FE::fe_getopenfile "
     } elseif {$opts(-dialogtype)=="save"} {
-      set command "tk_getSaveFile  -parent .cm"
+#      set command "tk_getSaveFile  -parent .cm"
+      set command "FE::fe_getsavefile "
     } elseif {$opts(-dialogtype)=="directory"} {
+      if {![info exists opts(-typew)]} {
+        set command "FE::fe_choosedir  -typew window "
+      } else {
+        set command "FE::fe_choosedir "
+      }
+
+if {0} {
       if {![info exists opts(-parent)]} {
         set command "tk_chooseDirectory  -parent .cm"
       } else {
         set command "tk_chooseDirectory "
       }
+
+}
     }
   }
   foreach opt $passingopts {
@@ -6837,7 +6862,7 @@ proc cagui::FileDialog {args} {
       lappend command $opt $opts($opt)
     }
   }
-
+puts "command=$command"
   set v [eval $command]
 
   if {$v != ""} {
@@ -8103,7 +8128,7 @@ bind .cm.setupwizard <<WizNextStep>> {[%W namespace]::nextStep %W}
   -dialogtype directory \
   -variable [namespace current]::wizData(dir_ca) \
   -title "Выберите каталог для БД УЦ" \
-  -initialdir $env(HOME) \
+  -initialdir $home \
   -parent ".cm"
   $c.e1 configure  -background white
   #Подключаем файловый проводник FE
@@ -8367,7 +8392,7 @@ $f.helpcafl63 config -bg #ffe0a6
     } else {
       cagui::FileEntry $f.e$i \
       -dialogtype open \
-      -initialdir $env(HOME) \
+      -initialdir $home \
       -variable [namespace current]::wizData(opensslexec) \
       -title "Выберите $label" \
       $f.e$i.entry configure -style red.TEntry
@@ -8853,8 +8878,10 @@ tkwizard::tkwizard .cm.certificatewizard -title {Содержимое серти
     system.certca ""
     ckzip11 0
     type "Personal"
+    ssl 0
   }
   [namespace current]::originalWidgetCommand configure  -text "Создание запроса на сертификат" -font {Times 11 bold}
+
 }
 
 bind .cm.certificatewizard <<WizFinish>> {[%W namespace]::finalize}
@@ -8902,7 +8929,6 @@ bind .cm.certificatewizard <<WizNextStep>> {[%W namespace]::nextStep %W}
 
   grid $c.lf1 -row 1 -column 0  -sticky new -padx 8 -pady {3mm 1mm}
   grid $c.type -row 1 -column 1  -sticky w -padx 4 -pady 1mm
-
   ###############
   # combo box
   label $c.l1 -text "Профиль сертификата:"
@@ -8914,6 +8940,11 @@ bind .cm.certificatewizard <<WizNextStep>> {[%W namespace]::nextStep %W}
   ttk::combobox $c.c1 -width 36 -textvariable [namespace current]::wizData(type) -values $listCert
   grid $c.l1 -row 2 -column 0 -sticky w -padx 8 -pady 4
   grid $c.c1 -row 2 -column 1 -sticky w -padx 4 -pady 4
+########################
+  label $c.lssl -text "SSL-сертификат:" -pady 0
+  ttk::checkbutton $c.cbssl -text "" -variable [namespace current]::wizData(ssl)
+  grid $c.lssl -row 3 -column 0  -sticky new -padx 8 -pady {3mm 1mm}
+  grid $c.cbssl -row 3 -column 1  -sticky w -padx 4 -pady 1mm
 
   set ww .cm.certificatewizard
   #tk_messageBox -title "Информация о заявителе" -message "Окно=\n$c" -icon info  -parent .cm.certificatewizard
@@ -8948,7 +8979,10 @@ bind .cm.certificatewizard <<WizNextStep>> {[%W namespace]::nextStep %W}
   #
   # override text for know subject types
   array set profdata [openssl::Profile_GetData $wizData(type)]
-  if {$profdata(other.subjecttype) == "Personal"} {
+  if {$wizData(ssl) == 1} {
+      set pretext "Укажите имя вашего основного домена. В окне
+      \"Certificate Subject Alternative Name\" можно указать имена поддоменов и IP-адресов."
+  } elseif {$profdata(other.subjecttype) == "Personal"} {
     #puts "pers wizData(type)=$wizData(type)"
     set pretext "Введите полное имя будущего владельца сертификата.
     Для физического лица это ФИО как в паспорте.
@@ -8977,6 +9011,68 @@ bind .cm.certificatewizard <<WizNextStep>> {[%W namespace]::nextStep %W}
   grid $c.e1 -row 0 -column 1 -sticky nwse -padx {0 5mm} -pady {5mm 4}
   grid columnconfigure $c 0 -weight 0
   grid columnconfigure $c 1 -weight 1
+#Запрос на SSL-сертификат
+  if {$wizData(ssl) == 1} {
+#    label $c.sslext -text "SSL-расширения"
+#    grid $c.sslext -row 1 -column 0 -sticky w -padx {4 0} -pady {5mm 4}
+###===========================
+    set varcn "wizDatacert(CN)"
+
+    labelframe $c.altsub -text "Certificate Subject Alternative Name:" -bg skyblue
+    #	ttk::labelframe $c.altsub -text "Certificate Subject Alt Name:"
+    grid $c.altsub -row 3  -column 0  -columnspan 2 -sticky nwse -padx {4 0} -pady 4
+#    grid remove $c.altsub
+
+    set i 0
+    foreach cb {dns ip email} {
+      label $c.altsub.$cb -text "[string toupper $cb]:"  -anchor w
+      ttk::combobox $c.altsub.box$cb  -state normal -height 4 -width 30
+      set aa [subst "::Liste$cb"]
+      set aa [subst $$aa]
+      set cmd [list $c.altsub.box$cb configure -values $aa]
+      eval $cmd
+      $c.altsub.box$cb delete 0 end
+      set tt [subst "::tek$cb"]
+      set tt [subst $$tt]
+      $c.altsub.box$cb insert end [lindex $aa $tt]
+      #readonly
+      set aa [subst "::tek$cb"]
+      set part "set $aa \[%W current\]"
+      set cmd [list bind $c.altsub.box$cb <<ComboboxSelected>> $part]
+      eval $cmd
+                              	
+      set gg [subst "bind $c.altsub.box$cb <Key-Return> {boxdns $c.altsub.box$cb ::tek$cb $cb}"]
+      eval $gg
+      switch $i {
+        0 {
+          grid $c.altsub.$cb -row $i -column 0 -sticky nwse -padx 4 -pady 4
+          grid $c.altsub.box$cb -row $i -column 1  -sticky nwse -padx 0 -pady 4
+        }
+        1 {
+          grid $c.altsub.$cb -row 0 -column 2 -sticky nwse -padx 4 -pady 4
+          grid $c.altsub.box$cb -row 0 -column 3  -sticky nwse -padx 0 -pady 4
+        }
+        2 {
+          grid $c.altsub.$cb -row 1 -column 0 -sticky nwse -padx 4 -pady 4
+          grid $c.altsub.box$cb -row 1 -column 1 -columnspan 3  -sticky nwse -padx 0 -pady 4
+        }
+
+      }
+
+      #	    grid $c.altsub.$cb -row $i -column 0 -sticky nwse -padx 4 -pady 4
+      #	    grid $c.altsub.box$cb -row $i -column 1  -sticky nwse -padx 0 -pady 4
+      incr i
+    }
+    ttk::checkbutton $c.altsub.tlssrv -text "TLS Web Server Autentication Certificate" -variable ::tlssrv
+    ttk::checkbutton $c.altsub.tlscln -text "TLS Web Client Autentication Certificate" -variable ::tlscln
+if {0} {
+    grid $c.altsub.tlssrv -row 2 -column 1 -columnspan 1  -sticky nwse -padx {0 4} -pady 4
+    grid $c.altsub.tlscln -row 2 -column 2 -columnspan 2  -sticky nwse -padx {40 40} -pady 4
+  grid columnconfigure $c.altsub 0 -weight 0
+  grid columnconfigure $c.altsub 3 -weight 1
+}
+  
+  }
 }
 
 .cm.certificatewizard step {cert_attr} -layout basic {
@@ -9300,6 +9396,7 @@ bind .cm.certificatewizard <<WizNextStep>> {[%W namespace]::nextStep %W}
   global defaultkey
   global defaultpar
   global g_iso3166_codes
+  global sAltName
 
   set c [$this widget clientArea]
 
@@ -9319,8 +9416,32 @@ bind .cm.certificatewizard <<WizNextStep>> {[%W namespace]::nextStep %W}
   set fnt(bold) [list [lindex $fnt(std) 0] [lindex $fnt(std) 1] bold]
   $c.t1 tag configure bold -font $fnt(bold)
 
-  $c.t1 insert end "Профиль сертификата:\n" bold
+  $c.t1 insert end "Профиль запроса на сертификата:\n" bold
   $c.t1 insert end "\t$wizData(type)\n"
+  if {$wizData(ssl) == 1} {
+    $c.t1 insert end "\tЗапрос на SSL-сертификат\n"
+    $c.t1 insert end "\tSubject Alternative Name:\n"
+    set sAltName ""
+    $c.t1 insert end "\t   DNS;\n"
+    foreach dns $::Listedns {
+	if {$dns == ""} {break}
+	append sAltName "DNS:$dns,"
+	$c.t1 insert end "\t\t$dns\n"
+    }
+    $c.t1 insert end "\t   IP:\n"
+    foreach ip $::Listeip {
+	if {$ip == ""} {break}
+	append sAltName "IP:$ip,"
+	$c.t1 insert end "\t\t$ip\n"
+    }
+    $c.t1 insert end "\t   Email address:\n"
+    foreach em $::Listeemail {
+	if {$em == ""} {break}
+	append sAltName "email:$em,"
+	$c.t1 insert end "\t\t$em\n"
+    }
+    set sAltName [string trim $sAltName ","]
+  }
   $c.t1 insert end "Subject Distinguished Name:\n" bold
 
   array set profdata [openssl::Profile_GetData $wizData(type)]
@@ -9331,7 +9452,7 @@ bind .cm.certificatewizard <<WizNextStep>> {[%W namespace]::nextStep %W}
   set wizData(dncsr) {}
   foreach {field dflt} $profdata(req.dn_fields) {
   if {$wizData($field) == ""} {
-  continue
+	continue
   }
   ####################
   if {$field == "C" } {
@@ -10450,11 +10571,12 @@ bind .cm.certificatewizard <<WizNextStep>> {[%W namespace]::nextStep %W}
   grid $c.l0 -row 0 -column 0 -columnspan 2 -sticky w -padx 2mm -pady 2mm
   label $c.l1 -text "Каталог с БД УЦ:" -bg white
   #            -width 40
+  global home
   cagui::FileEntry $c.e1 \
   -dialogtype directory \
   -variable [namespace current]::wizData(dir_ca) \
   -title "Выберите каталог с БД УЦ" \
-  -initialdir $env(HOME) \
+  -initialdir $home \
   -parent .cm
   $c.e1 configure  -background white
   eval "$c.e1.but configure -command {feselect dir $c window {Выберите каталог с БД УЦ} $home {[namespace current]::wizData(dir_ca)} {}}"
@@ -12502,7 +12624,7 @@ proc ObjectManager {w} {
 
   }
 
-  set zag {    Добро пожаловать в Удостоверяющий Центр УЦ ФЗ-63 (редакция 29.0.1.2021)}
+  set zag {    Добро пожаловать в Удостоверяющий Центр УЦ ФЗ-63 (редакция 29.01.2021)}
   #    ttk::label $w.who -text $zag -justify center -image validcert_new -compound left -background #e0e0da -font {Times 11 bold italic}  -borderwidth 4 -relief groove
   ttk::label $w.who -text $zag -justify center -image validcert_new -compound left -background #eff0f1 -font {Times 11 bold italic}   -borderwidth 4 -relief flat
   pack $w.who    -padx 30 -pady 10 -ipadx 5
@@ -14091,6 +14213,7 @@ proc cmd::WizardSignRequest {} {
 }
 
 proc cmd::WizardSignRequestByIndex {reqs treeID} {
+    global sAltName
 
   debug::msg "cmd::WizardSignRequestByIndex"
   global dbca
@@ -14102,6 +14225,18 @@ proc cmd::WizardSignRequestByIndex {reqs treeID} {
       continue
     }
     # get certificate filename
+
+#puts "cmd::WizardSignRequestByIndex: csrextensions"
+array set csrexts [openssl::Request_GetInfo -serial $req -get extensions]
+#parray csrexts
+if { ![info exists csrexts(X509v3\ Subject\ Alternative\ Name)] } {
+  set sAltName  "email:copy"
+} else {
+  set sAltName  $csrexts(X509v3 Subject Alternative Name)
+  set sAltName [string map {" Address:" ":"} $sAltName]
+}
+unset csrexts
+
     set filename [openssl::Object_GetPEMforCKAID $req "req"]
     set w .cm.signwizard
     #puts "WizardSignRequestByIndex: $req"
@@ -14337,7 +14472,7 @@ proc cmd::PublishByIndex {idcerts type} {
     }
     #    puts "PubCERT=$idcert"
 #    set file [tk_getSaveFile -title $title -filetypes $typedb -initialdir $dir -initialfile $initf -parent .cm]
-    set file [tk_getSaveFile -title $title -filetypes $typedb -initialdir $dir -initialfile $initf -parent .cm]
+    set file [FE::fe_getsavefile -title $title -filetypes $typedb -initialdir $dir -initialfile $initf]
     if {$file == ""} {
       tk_messageBox -title "$pubtit" -icon error -message "Файл не выбран.\n" -parent .cm
       continue
@@ -14453,7 +14588,8 @@ proc page2com3 {} {
     {"Любой файл"  *}
   }
   set initf "certAllDB.dump"
-  set file [tk_getSaveFile -title "SQL-дамп таблицы всех сертификатов" -filetypes $typedb -initialdir $dir -initialfile $initf -parent .cm]
+#  set file [tk_getSaveFile -title "SQL-дамп таблицы всех сертификатов" -filetypes $typedb -initialdir $dir -initialfile $initf -parent .cm]
+  set file [FE::fe_getsavefile -title "SQL-дамп таблицы всех сертификатов" -filetypes $typedb -initialdir $dir]
   if {$file == ""} {
     return
   }
@@ -14535,7 +14671,8 @@ proc page2com4 {} {
     {"Любой файл"  *}
   }
   set initf "certDBNew.dump"
-  set file [tk_getSaveFile -title "Выгрузка новых сертификатов в SQL-дамп" -filetypes $typedb -initialdir $dir -initialfile $initf -parent .cm]
+#  set file [tk_getSaveFile -title "Выгрузка новых сертификатов в SQL-дамп" -filetypes $typedb -initialdir $dir -initialfile $initf -parent .cm]
+  set file [FE::fe_getsavefile -title "Выгрузка новых сертификатов в SQL-дамп" -filetypes $typedb -initialdir $dir]
   if {$file == ""} {
     return
   }
@@ -14658,7 +14795,8 @@ proc exportCerts {type} {
       set capem [string trimright $capem \}]
       set capem [string trimleft $capem \{ ]
       	
-      set file [tk_chooseDirectory -title $title  -initialdir $dir  -parent .cm]
+#      set file [tk_chooseDirectory -title $title  -initialdir $dir  -parent .cm]
+      set file [FE::fe_choosedir -title $title  -initialdir $dir]
       if {$file == ""} {
         return
       }
@@ -14674,8 +14812,12 @@ proc exportCerts {type} {
     }
   }
   #    puts "Export New: $dir"
-  set file [tk_chooseDirectory -title $title  -initialdir $dir  -parent .cm]
+#  set file [tk_chooseDirectory -title $title  -initialdir $dir  -parent .cm]
+puts "ExportCerts: START"
+  set file [FE::fe_choosedir -title $title  -initialdir $dir]
+puts "ExportCerts: END"
   if {$file == ""} {
+puts "ExportCerts: file=$file"
     return
   }
   set countfile 0
@@ -14726,11 +14868,12 @@ proc cmd::ViewCertificateInfo {} {
   global typesys
   global env
   debug::msg "cmd::ViewCertificateInfo"
+  global home
 
   set crt_fn [cagui::FileDialog -dialogtype open \
   -defaultextension [Config::Get filetype.cert_default_ext] \
   -filetypes [Config::Get filetype.certificate] \
-  -initialdir $env(HOME) \
+  -initialdir $home \
   -initialfile [::Config::Get folder.certificates] \
   -title "Укажите имя файла с сертификатом" ]
 
@@ -14836,12 +14979,13 @@ proc cmd::ImportRequest {} {
 
 proc cmd::ViewRequestInfo {} {
   global env
+  global home
   debug::msg "cmd::ViewRequestInfo"
 
   set crt_fn [cagui::FileDialog -dialogtype open \
   -defaultextension [Config::Get filetype.request] \
   -filetypes [Config::Get filetype.request] \
-  -initialdir $env(HOME) \
+  -initialdir $home \
   -initialfile [::Config::Get folder.requests] \
   -title "Уважите файл с запросом на сертификат" ]
 
@@ -14866,24 +15010,25 @@ proc cmd::ViewByIndexReq {reqs} {
     set reqs [lrange $reqs 0 9]
   }
   foreach req $reqs {
-    set crtdetails [openssl::Request_GetInfo -serial $req -get details]
-    set crttext [openssl::Request_GetInfo -serial $req -get text]
-    set crtextensions [openssl::Request_GetInfo -serial $req -get extensions]
+    set csrdetails [openssl::Request_GetInfo -serial $req -get details]
+    set csrtext [openssl::Request_GetInfo -serial $req -get text]
+    set csrextensions [openssl::Request_GetInfo -serial $req -get extensions]
     set publickey [openssl::Request_GetInfo -serial $req -get publickey]
-    set allfields [concat $crtdetails $crtextensions $publickey]
+    set allfields [concat $csrdetails $csrextensions $publickey]
     #0 просмотр запроса из БД, не 0 - просмотр импортируемого запроса
-    set attr(exit) [Dialog_ShowRequestInfo .popup$req {Просмотр запроса} $allfields $crttext 0 $req]
+    set attr(exit) [Dialog_ShowRequestInfo .popup$req {Просмотр запроса} $allfields $csrtext 0 $req]
   }
 }
 
 proc cmd::ViewCRLInfo {} {
   global env
+  global home
   debug::msg "cmd::ViewCRLInfo"
 
   set crl_fn [cagui::FileDialog -dialogtype open \
   -defaultextension [Config::Get filetype.crl] \
   -filetypes [Config::Get filetype.crl] \
-  -initialdir $env(HOME) \
+  -initialdir $home \
   -initialfile [::Config::Get folder.requests] \
   -title "Уважите файл с СОС/CRL " ]
 
@@ -14949,6 +15094,36 @@ proc cmd::ExitDB {} {
   }
   #    catch {keydb close}
   exit 0
+}
+
+proc boxdns {c tekdns cb} {
+  set dns [$c get];
+  if {$cb == "email" && $dns != ""} {
+    set mail [verifyemail $dns]
+    if {$mail != "OK" } {
+      tk_messageBox -title "Запрос на SSL-сертификат" -message "Ошибка в адресе электронной почты:" -detail "\t$dns" -icon error  -parent .
+      return 0
+    }
+  }
+  if {$cb == "ip" && $dns != ""} {
+    set ver [::ip::version $dns]
+    if {$ver == -1 } {
+      tk_messageBox -title "Запрос на SSL-сертификат" -message "Ошибка в IP-адресе:" -detail "\t$dns" -icon error  -parent .
+      return 0
+    }
+  }
+
+  upvar $tekdns tek
+  set Liste [lindex [$c configure -values] end]
+  set len [llength $Liste]; incr len -1;puts "LEN=$len";
+  if {$dns == ""} {
+    set Liste [lreplace $Liste $tek $tek]
+  } else {lset Liste $tek $dns};
+  if {$tek == $len} { lappend Liste ""};
+  $c configure -values $Liste
+  set aa [subst "::Liste$cb"]
+  set $aa $Liste
+  set aa [subst $$aa]
 }
 
 
