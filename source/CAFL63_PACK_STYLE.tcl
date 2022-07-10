@@ -716,9 +716,10 @@ proc feselect {tdialog c typew titul tekdir var msk } {
   switch -- $tdialog {
     "open"        {
 #      set vrr [FE::fe_getopenfile $typew "$c.sfile" $tekdir $msk]
-      set vrr1 [FE::fe_getopenfile -typew $typew -widget "$c.sfile" -initialdir $tekdir -filetypes $msk]
+      set vrr1 [FE::fe_getopenfile -typew $typew -widget "$c.sfile" -initialdir $tekdir -filetypes $msk -details 1 -width 600 -height 500]
     }
     "save" {
+      set vrr1 [FE::fe_getsavefile -typew $typew -widget "$c.sfile" -initialdir $tekdir -filetypes $msk -width 600 -height]
     }
     "dir" {
 #      set vrr [FE::fe_choosedir $typew "$c.sfile" $tekdir]
@@ -6836,10 +6837,10 @@ proc cagui::FileDialog {args} {
   if {[info exists opts(-dialogtype)]} {
     if {$opts(-dialogtype)=="open"} {
 #      set command "tk_getOpenFile -parent .cm"
-      set command "FE::fe_getopenfile "
+      set command "FE::fe_getopenfile -details 1 -width 600 -height 500"
     } elseif {$opts(-dialogtype)=="save"} {
 #      set command "tk_getSaveFile  -parent .cm"
-      set command "FE::fe_getsavefile "
+      set command "FE::fe_getsavefile -details 1 -width 600 -height 500"
     } elseif {$opts(-dialogtype)=="directory"} {
       if {![info exists opts(-typew)]} {
         set command "FE::fe_choosedir  -typew window "
@@ -14429,6 +14430,7 @@ proc cmd::PublishByIndex {idcerts type} {
   set pubtit "Экспорт сертификата"
   set initf ""
   set dir ""
+  set typepub ""
   foreach idcert $idcerts {
     switch -- $type {
       "cert" {
@@ -14440,6 +14442,7 @@ proc cmd::PublishByIndex {idcerts type} {
           {"Любой файл"  *}
         }
 	set dir [Config::Get folder.certificates]
+	set typepub "Сертификат"
       }
       "req" {
         set title "Выберите файл для запроса"
@@ -14450,12 +14453,14 @@ proc cmd::PublishByIndex {idcerts type} {
           {"Любой файл"  *}
         }
 	set dir [Config::Get folder.requests]
+	set typepub "Запрос на сертификат"
       }
       "crl" {
         set dir [Config::Get folder.crls]
         set pubtit "Экспорт СОС/CRL"
         set title "Выберите файл для СОС/CRL"
-        set initf [file join [::Config::Get folder.crls] "CAFL63-[clock format [clock seconds] -format {%Y-%m-%d}].crl"]
+#        set initf [file join [::Config::Get folder.crls] "CAFL63-[clock format [clock seconds] -format {%Y-%m-%d}].crl"]
+        set initf "CAFL63-[clock format [clock seconds] -format {%Y-%m-%d}].crl"
         set typedb {
           {"Формат CRL"    *.crl}
           {"Формат PEM"    *.pem}
@@ -14464,6 +14469,7 @@ proc cmd::PublishByIndex {idcerts type} {
         }
         set cert [openssl::Object_GetPEMforCKAID $idcert $type]
 	set dir [Config::Get folder.crls]
+	set typepub "Список отозванных сертификатов"
       }
       default {
         tk_messageBox -title "Экспорт" -icon error -message "Экспорт неизвестного объекта ($type).\n" -parent .cm
@@ -14472,15 +14478,16 @@ proc cmd::PublishByIndex {idcerts type} {
     }
     #    puts "PubCERT=$idcert"
 #    set file [tk_getSaveFile -title $title -filetypes $typedb -initialdir $dir -initialfile $initf -parent .cm]
-    set file [FE::fe_getsavefile -title $title -filetypes $typedb -initialdir $dir -initialfile $initf]
+    set file [FE::fe_getsavefile -title $title -filetypes $typedb -initialdir $dir -initialfile $initf -details 1 -width 600 -height 500]
     if {$file == ""} {
-      tk_messageBox -title "$pubtit" -icon error -message "Файл не выбран.\n" -parent .cm
+#      tk_messageBox -title "$pubtit" -icon error -message "Файл не выбран.\n" -parent .cm
       continue
     }
-    set fd [open $file w]
+
+    set fd [open [file join $dir $file] w]
     puts  $fd $cert
     close $fd
-    tk_messageBox -title $pubtit -icon info -message "Сертификат сохранен в\n$file" -parent .cm
+    tk_messageBox -title $pubtit -icon info -message "$typepub сохранен в\n[file join $dir $file]" -parent .cm
   }
 }
 
@@ -14589,7 +14596,7 @@ proc page2com3 {} {
   }
   set initf "certAllDB.dump"
 #  set file [tk_getSaveFile -title "SQL-дамп таблицы всех сертификатов" -filetypes $typedb -initialdir $dir -initialfile $initf -parent .cm]
-  set file [FE::fe_getsavefile -title "SQL-дамп таблицы всех сертификатов" -filetypes $typedb -initialdir $dir]
+  set file [FE::fe_getsavefile -title "SQL-дамп таблицы всех сертификатов" -filetypes $typedb -initialdir $dir -details 1 -width 600 -height 500]
   if {$file == ""} {
     return
   }
@@ -14672,7 +14679,7 @@ proc page2com4 {} {
   }
   set initf "certDBNew.dump"
 #  set file [tk_getSaveFile -title "Выгрузка новых сертификатов в SQL-дамп" -filetypes $typedb -initialdir $dir -initialfile $initf -parent .cm]
-  set file [FE::fe_getsavefile -title "Выгрузка новых сертификатов в SQL-дамп" -filetypes $typedb -initialdir $dir]
+  set file [FE::fe_getsavefile -title "Выгрузка новых сертификатов в SQL-дамп" -filetypes $typedb -initialdir $dir -details 1 -width 600 -height 500]
   if {$file == ""} {
     return
   }

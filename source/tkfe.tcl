@@ -20,8 +20,10 @@ namespace eval FE {
   ###################################################################
   mcset ru "No access" "Нет доступа"
   mcset ru "Create directory" "Создать каталог"
+  mcset ru "Rename directory" "Переименовать каталог"
   mcset ru "Create an empty file" "Создать пустой файл"
   mcset ru "Delete file" "Удалить файл"
+  mcset ru "Rename file" "Переименовать файл"
   mcset ru "Delete directory" "Удалить каталог"
   mcset ru "Enter a new folder name" "Введите новое имя папки"
   mcset ru "Enter a new file name" "Введите новое имя файла"
@@ -594,11 +596,9 @@ RCErC+t5ev0G+IJgEdGMZSVQYS+e5l9h+80+zAmm+gAAAABJRU5ErkJggg==
     }
 #    file delete -force "$file"
     file delete -force [lindex $file 0]
-
-    $w.seldir.entdir configure -state normal
-    $w.seldir.entdir delete 0 end
-    $w.seldir.entdir configure -state readonly
+    set FE::folder(initialfile) ""
     populateRoots "$w.files.t" "$::tekPATH" $typefb
+#Или goupdate
   }
 
   proc showContextMenu {w x y rootx rooty fm typefb} {
@@ -622,18 +622,18 @@ RCErC+t5ev0G+IJgEdGMZSVQYS+e5l9h+80+zAmm+gAAAABJRU5ErkJggg==
         .contextMenu add command -label [mc "No access"] -command {}
       }
       if {$t == "file"} {
-        .contextMenu add command -label [mc "No access"] \
+        .contextMenu add command -label [mc "Delete file"] \
         -command [list [namespace current]::filedel $fm $s $typefb]
         .contextMenu add separator
-        .contextMenu add command -label [mc "No access"] \
-        -command [list [namespace current]::renameobj "$fm.titul.lab" "file"  $s $fm]
+        .contextMenu add command -label [mc "Rename file"] \
+        -command [list [namespace current]::renameobj "$fm.tekfolder" $typefb  $s $fm]
       }
       if {$t == "directory"} {
         .contextMenu add command -label [mc "Delete directory"] \
         -command [list [namespace current]::filedel $fm $s $typefb]
         .contextMenu add separator
         .contextMenu add command -label [mc "Rename directory"] \
-        -command [list [namespace current]::renameobj "$fm.titul.lab" "dir"  $s $fm]
+        -command [list [namespace current]::renameobj "$fm.tekfolder" $typefb  $s $fm]
       }
       .contextMenu add separator
     }
@@ -763,14 +763,6 @@ RCErC+t5ev0G+IJgEdGMZSVQYS+e5l9h+80+zAmm+gAAAABJRU5ErkJggg==
 
 #  proc initfe {typew w initdir typefb otv msk} {}
   proc initfe {typefb otv args} {
-    #Для Win32
-    if {0} {
-      #Целесообразно делать в программе пользователя
-      if {[tk windowingsystem] == "win32"} {
-        set initdir [encoding convertfrom cp1251 $initdir ]
-        set initdir [string map {"\\" "/"} $initdir]
-      }
-    }
 # 1: the configuration specs
 #
     catch {unset FE::data}
@@ -815,6 +807,7 @@ RCErC+t5ev0G+IJgEdGMZSVQYS+e5l9h+80+zAmm+gAAAABJRU5ErkJggg==
     set msk $FE::data(-filetypes)
     set FE::folder(typew) $typew
     set FE::folder(w) $w
+    set FE::folder(initialfile) ""
     if {$typefb == "dir"} {
 	set FE::folder(sepfolders) 0
     } else {
@@ -1179,8 +1172,11 @@ RCErC+t5ev0G+IJgEdGMZSVQYS+e5l9h+80+zAmm+gAAAABJRU5ErkJggg==
     labelframe $fm.seldir -text $ltit -bd 0 -labelanchor n
     entry $fm.seldir.entdir -relief sunken -bg white -highlightthickness 0 -highlightbackground skyblue -highlightcolor blue -readonlybackground white
     pack $fm.seldir.entdir -side right -anchor ne -fill x -expand 1
-    $fm.seldir.entdir delete 0 end
-    $fm.seldir.entdir configure -state readonly
+#    $fm.seldir.entdir delete 0 end
+    $fm.seldir.entdir configure -textvariable FE::folder(initialfile)
+    if {$typefb != "filesave"} {
+	$fm.seldir.entdir configure -state readonly
+    }
 
     ###############=============PACK=============================
     pack $fm.titul -anchor ne -expand 0 -fill x -side top -pady {0 0}
@@ -1207,15 +1203,14 @@ RCErC+t5ev0G+IJgEdGMZSVQYS+e5l9h+80+zAmm+gAAAABJRU5ErkJggg==
 
     page_newdir $fm $typefb
 #puts "initfe: FE::folder(sepfolders)=$FE::folder(sepfolders) initdir=$initdir"
+    set FE::folder(tek) $initdir
+    lappend FE::folder(history) $FE::folder(tek)
+    incr [namespace current]::folder(histpos)
     if {$FE::folder(sepfolders)} {
 	gosepfolders $fm $typew $typefb
     } else {
 	populateRoots "$fm.files.t" "$initdir" $typefb
     }
-
-    lappend FE::folder(history) $FE::folder(tek)
-    incr [namespace current]::folder(histpos)
-
     if {$typew != "frame"} {
       tkwait visibility $w
 puts "initfe: tk busy hold $w"
@@ -1234,6 +1229,9 @@ puts "initfe: tk busy hold1 $w"
 #	place $w -in $wplace -relx 0.15 -rely 0.5 -relwidth 0.75 -relheight 7.5
 	place $w -in . -relx 0.15 -rely 0.1 -relwidth 0.75 -relheight 0.75
 
+    }
+    if {$typefb == "filesave"} {
+	set FE::folder(initialfile) $FE::data(-initialfile)
     }
   }
 
@@ -1301,9 +1299,9 @@ puts "initfe: tk busy hold1 $w"
       tk_messageBox -title "Просмотр папки" -icon info -message "Каталог не доступен (goup):\n$tdir" -parent $w
       return
     }
-    $w.seldir.entdir configure -state normal
-    $w.seldir.entdir delete 0 end
-    $w.seldir.entdir configure -state readonly
+    if {$typefb != "filesave"} {
+	set FE::folder(initialfile) ""
+    }
 
     populateRoots "$w.files.t" "$tdir" $typefb
     set FE::folder(tek) $tdir
@@ -1335,9 +1333,9 @@ puts "initfe: tk busy hold1 $w"
       tk_messageBox -title "Просмотр папки" -icon info -message "Каталог не доступен (gohome):\n$tdir" -parent $w
       return
     }
-    $w.seldir.entdir configure -state normal
-    $w.seldir.entdir delete 0 end
-    $w.seldir.entdir configure -state readonly
+    if {$typefb != "filesave"} {
+	set FE::folder(initialfile) ""
+    }
 
     populateRoots "$w.files.t" "$tdir" $typefb
     set FE::folder(tek) $tdir
@@ -1347,9 +1345,9 @@ puts "initfe: tk busy hold1 $w"
 
   proc goupdate {w typefb} {
     set tdir [lindex $FE::folder(history) $FE::folder(histpos)]
-    $w.seldir.entdir configure -state normal
-    $w.seldir.entdir delete 0 end
-    $w.seldir.entdir configure -state readonly
+    if {$typefb != "filesave"} {
+	set FE::folder(initialfile) ""
+    }
     populateRoots "$w.files.t" "$tdir" $typefb
     set FE::folder(tek) $tdir
     [namespace current]::columnSort $w.files.t $::FE::folder(column) $::FE::folder(direction)
@@ -1358,9 +1356,9 @@ puts "initfe: tk busy hold1 $w"
   proc goprev {w typefb} {
     incr FE::folder(histpos) -1
     set tdir [lindex $FE::folder(history) $FE::folder(histpos)]
-    $w.seldir.entdir configure -state normal
-    $w.seldir.entdir delete 0 end
-    $w.seldir.entdir configure -state readonly
+    if {$typefb != "filesave"} {
+	set FE::folder(initialfile) ""
+    }
     populateRoots "$w.files.t" "$tdir" $typefb
     set FE::folder(tek) $tdir
     $FE::folder(nextBtn) state !disabled
@@ -1398,9 +1396,9 @@ puts "initfe: tk busy hold1 $w"
   proc gonext {w typefb} {
     incr FE::folder(histpos)
     set tdir [lindex $FE::folder(history) $FE::folder(histpos)]
-    $w.seldir.entdir configure -state normal
-    $w.seldir.entdir delete 0 end
-    $w.seldir.entdir configure -state readonly
+    if {$typefb != "filesave"} {
+	set FE::folder(initialfile) ""
+    }
     populateRoots "$w.files.t" "$tdir" $typefb
     set FE::folder(tek) $tdir
     $FE::folder(prevBtn) state !disabled
@@ -1469,10 +1467,7 @@ puts "initfe: tk busy hold1 $w"
     } else {
       set tekdir "[lindex $titem 0]"
     }
-    $w1.seldir.entdir configure -state normal
-    $w1.seldir.entdir delete 0 end
-    $w1.seldir.entdir insert end "[file tail $tekdir]"
-    $w1.seldir.entdir configure -state readonly
+    set FE::folder(initialfile) "[file tail $tekdir]"
 #uts "W1=$w1 W=$w"
 
     if {$click == 2 && [lindex $titem 1] == "file"} {
@@ -1531,11 +1526,14 @@ puts "initfe: tk busy hold1 $w"
     } else {
       set tekdir "[lindex $titem 0]"
     }
-    $w1.seldir.entdir configure -state normal
-    $w1.seldir.entdir delete 0 end
-    $w1.seldir.entdir insert end "[file tail $tekdir]"
-    $w1.seldir.entdir configure -state readonly
-#uts "W1=$w1 W=$w"
+    if {$typefb == "dir"} {
+#	set FE::folder(initialfile) "[file tail $tekdir]"
+	$w1.seldir.entdir configure -state normal
+	$w1.seldir.entdir delete 0 end
+	$w1.seldir.entdir insert end "[file tail $tekdir]"
+        $w1.seldir.entdir configure -state readonly
+
+    }
   }
 
   proc fereturn {typew w typefb otv} {
@@ -1548,19 +1546,19 @@ puts "initfe: tk busy hold1 $w"
         $w.tekfolder.ldir configure -state normal
         set ret [$w.tekfolder.ldir get]
         $w.tekfolder.ldir configure -state readonly
+      } elseif {$typefb == "filesave"} {
+        if {$FE::folder(initialfile) == ""} {
+    	    return
+        }
+        set ret $FE::folder(initialfile)
       } else {
         return
       }
-    }
-    set rettype [lindex $titem 1]
-    if {$typefb != "dir" && $rettype != "file"} {
-      return
     }
 
     set $otv $ret
     if {$typew != "frame"} {
 	tk busy forget [winfo parent $w]
-#      grab release $w
     }
     catch {destroy $w}
     return $otv
@@ -1569,7 +1567,6 @@ puts "initfe: tk busy hold1 $w"
   proc fecancel {typew w typefb otv} {
     if {$typew != "frame"} {
 	tk busy forget [winfo parent $w]
-#      grab release $w
     }
     catch {destroy $w}
     variable $otv
@@ -1583,9 +1580,8 @@ puts "initfe: tk busy hold1 $w"
 
     set tekdir $dir
     set w1 [winfo toplevel $tree]
-puts "populateRoots tree=$tree dir=$dir typefb=$typefb"
+#puts "populateRoots tree=$tree dir=$dir typefb=$typefb"
     if {$typefb != "dir"} {
-#      set mask [$w1.filter.entdir get]
       set mask $FE::folder(filter)
     } else {
       set mask "*"
@@ -1696,7 +1692,6 @@ puts "populateRoots tree=$tree dir=$dir typefb=$typefb"
           -values [list $f $type]]
         }
         file stat $f fstat
-#        set size [file size $f]
 	set size $fstat(size)
 	set date $fstat(mtime)
 	set uid  $fstat(uid)
@@ -1780,28 +1775,32 @@ puts "populateRoots tree=$tree dir=$dir typefb=$typefb"
       return
     }
     if {$type == "dir"} {
-      file mkdir $newd
-      #Доделать
-      populateRoots "$fm.files.t" "$newd" "dir"
-      set FE::folder(tek) [file join $FE::folder(tek) $newdir]
-      lappend FE::folder(history) $FE::folder(tek)
-      incr [namespace current]::folder(histpos)
-      $FE::folder(prevBtn) state !disabled
+	catch {file mkdir $newd} er 
+	if {$er != ""} {
+    	    tk_messageBox -title [mc "Create directory"] -icon info -message "Каталог создать не удалось\n$er" -parent $w
+	    return
+	}
+	lappend FE::folder(history) [file join $FE::folder(tek) $newdir]
+	gonext $fm $typefb
     } else {
-      set fd [open $newd w]
-      chan configure $fd -translation binary
-      close $fd
-      populateRoots "$fm.files.t" "$::tekPATH" $type
+        if {[catch {set fd [open $newd w]} er]} {
+    	    tk_messageBox -title [mc "Create file"] -icon info -message "Файл создать не удалось\n$er" -parent $w
+    	    return
+        }
+        chan configure $fd -translation binary
+        close $fd
+	goupdate $fm $typefb
     }
     set pass ""
+    return
   }
 
-  proc renameobj {w type oldname fm} {
+  proc renameobj {w typefb oldname fm} {
     global pass
     global yespas
-    if {$type == "dir"} {
+    if {$typefb == "dir"} {
       set ::newname  [mc "Enter a new folder name"]
-    } elseif {$type == "file"} {
+    } elseif {$typefb == "fileopen" || $typefb == "filesave" } {
       set ::newname  [mc "Enter a new file name"]
     } else {
       return
@@ -1829,8 +1828,8 @@ puts "populateRoots tree=$tree dir=$dir typefb=$typefb"
 #puts "\n$newdir\n$oldname\n$newd\n$oldn"
 
     if {[file exists $newd]} {
-      if {$type == "file"} {
-        set answer [tk_messageBox -title "Переименование файла" -icon question -message "Файл с таким именем есть:\n$oldname\nПродолжить операцию ?" -type yesno  -parent $w]
+      if {$typefb == "fileopen" || $typefb == "filesave"} {
+        set answer [tk_messageBox -title "mc [Rename file]" -icon question -message "Файл с таким именем есть:\n$oldname\nПродолжить операцию ?" -type yesno  -parent $w]
         if {$answer != "yes"} {
           return
         }
@@ -1838,10 +1837,13 @@ puts "populateRoots tree=$tree dir=$dir typefb=$typefb"
     }
     file rename -force "[lindex $oldname 0]" "$newd"
 #    file rename -force "$oldn" "$newd"
+    set FE::folder(initialfile) ""
     $fm.seldir.entdir configure -state normal
     $fm.seldir.entdir delete 0 end
-    $fm.seldir.entdir configure -state readonly
-    populateRoots "$fm.files.t" "$::tekPATH" $type
+    if {$typefb != "filesave"} {
+	$fm.seldir.entdir configure -state readonly
+    }
+    populateRoots "$fm.files.t" "$::tekPATH" $typefb
     set pass ""
   }
 #  proc fe_getsavefile {typew w tekdir msk} {}
