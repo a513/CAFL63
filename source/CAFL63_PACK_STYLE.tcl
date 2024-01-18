@@ -2100,7 +2100,7 @@ array set profile_options {
   req.default_bits.labels        {"low grade (512 bits)" "medium grade (1024 bits)" "high grade (2048 bits)" "very high grade(4096 bits)"}
   CA_ext.nsCertType.options {client server email objsign reserved sslCA emailCA objCA}
   CA_ext.keyUsage.options {digitalSignature nonRepudiation keyEncipherment dataEncipherment keyAgreement keyCertSign cRLSign encipherOnly decipherOnly}
-  CA_ext.extKeyUsage.options {whois role serverAuth clientAuth codeSigning emailProtection ipsecEndSystem ipsecTunnel ipsecUser timeStamping OCSPSigning msSGC nsSGC }
+  CA_ext.extKeyUsage.options {whois role serverAuth clientAuth codeSigning emailProtection ipsecEndSystem ipsecTunnel ipsecIKE ipsecUser timeStamping OCSPSigning msSGC nsSGC }
   CA_ext.extKeyUsageRoles.options {serverAuth1 clientAuth1 codeSigning1 emailProtection1 ipsecEndSystem1 ipsecTunnel1 ipsecUser1 timeStamping1 OCSPSigning1 msSGC1 nsSGC1}
   _DN_Fields {C ST L street O OU CN SN GN INN INNLE OGRN OGRNIP SNILS title emailAddress unstructuredName}
 
@@ -2931,7 +2931,22 @@ proc openssl::ConfigFile_GenerateValues {prof} {
   # key usage
   set p(line.keyUsage) [ConfigFile_IfExists    keyUsage p(CA_ext.keyUsage)]
   # extended key usage
-  set p(line.extKeyUsage) [ConfigFile_IfExists    extendedKeyUsage p(CA_ext.extKeyUsage)]
+
+  set pnew ""
+  foreach pt [split $p(CA_ext.extKeyUsage) ",\ "] {
+    if {$pt == ""} {continue}
+    if {$pnew != ""} {
+	append pnew ", "
+    }
+    if {$pt == "ipsecIKE"} {
+	append pnew "oid:1.3.6.1.5.5.7.3.17"
+    } else {
+	append pnew $pt
+    }
+  }
+
+#  set p(line.extKeyUsage) [ConfigFile_IfExists    extendedKeyUsage p(CA_ext.extKeyUsage)]
+  set p(line.extKeyUsage) [ConfigFile_IfExists    extendedKeyUsage pnew]
   # netscape certificate type
   set p(line.nsCertType) [ConfigFile_IfExists    nsCertType p(CA_ext.nsCertType)]
   # netscape others
@@ -4934,21 +4949,6 @@ proc openssl::CRL_GetInfo {args} {
   return $result
 }
 
-
-set Cert_UsageMessage {
-  serverAuth "Ensures the identity of a remote computer"
-  clientAuth "Proves your identity to a remote computer"
-  codeSigning "Ensures software came from software publisher\nProtects software from alteration after publication"
-  emailProtection "Protects e-mail messages"
-  ipsecEndSystem ""
-  ipsecTunnel ""
-  ipsecUser ""
-  timeStamping "Allows data to be signed with the current time"
-  OCSPSigning "Allows you to digitally sign a certificate trust list"
-  msSGC "Microsoft Server Gate Crypto"
-  nsSGC "Netscape Server Gate Crypto"
-}
-
 ######################################################################
 # openssl::Certificate_IsValid args
 # arguments:
@@ -6523,7 +6523,7 @@ proc ProfileDialog::Create {w profilename} {
 
   #Key Usage:
   label $f.l1 -text "Key Usage:" -font $fnt(bold)
-  grid $f.l1 -row 1 -column 0 -columnspan 1 -sticky w -padx 8 -pady 2mm
+  grid $f.l1 -row 1 -column 0 -columnspan 1 -sticky w -padx 8 -pady "2m 0"
   grid rowconfigure $f 1 -weight 0
 
   set i 2
@@ -6535,7 +6535,7 @@ proc ProfileDialog::Create {w profilename} {
   set m $i
 
   label $f.l3 -text "Ext. Key Usage:" -font $fnt(bold)
-  grid $f.l3 -row 1 -column 1 -columnspan 1 -sticky w -padx 8 -pady 2mm
+  grid $f.l3 -row 1 -column 1 -columnspan 1 -sticky w -padx 8 -pady "2m 0"
   grid rowconfigure $f 1 -weight 0
 
   set i 2
@@ -6544,14 +6544,14 @@ proc ProfileDialog::Create {w profilename} {
       continue;
     }
     ttk::checkbutton $f.ccc$i -text "$v" -variable ::ProfileDialog::prof(CA_ext.extKeyUsage.$v)
-    grid $f.ccc$i -row $i -column 1 -columnspan 1 -sticky w -padx 8 ;# -pady 4
+    grid $f.ccc$i -row $i -column 1 -columnspan 1 -sticky w -padx 8; # -pady "1 0"
     grid rowconfigure $f $i -weight 0
     incr i
   }
   if {$i>$m} {set m $i}
   #Netscape Type
   label $f.l2 -text "Netscape Type:" -font $fnt(bold)
-  grid $f.l2 -row 1 -column 2 -columnspan 1 -sticky w -padx 8 -pady 2mm
+  grid $f.l2 -row 1 -column 2 -columnspan 1 -sticky w -padx 8 -pady "2m 0"
   grid rowconfigure $f 1 -weight 0
 
   set i 2
@@ -6565,13 +6565,13 @@ proc ProfileDialog::Create {w profilename} {
   grid rowconfigure $f $m -weight 1
   #Роли сертификата - Детище российского PKI
   label $f.l4 -text "Роли:" -font $fnt(bold)
-  grid $f.l4 -row 1 -column 3 -columnspan 1 -sticky w -padx 8 -pady 2mm
+  grid $f.l4 -row 1 -column 3 -columnspan 1 -sticky w -padx 8 -pady "2m 0"
   grid rowconfigure $f 1 -weight 0
   set i 2
   foreach v $opts(CA_ext.extKeyUsage.options) {
     if {$v == "whois" && $profilename != "SSL Server"} {
       label $f.lwho -text "Владелец сертификата:" -font $fnt(bold)
-      grid $f.lwho -row $i -column 3 -columnspan 1 -sticky w -padx 8 -pady 1mm
+      grid $f.lwho -row $i -column 3 -columnspan 1 -sticky w -padx 8 -pady 1m
       incr i
       ttk::combobox $f.cr$i -text "$v" -textvariable ::ProfileDialog::prof(CA_ext.extKeyUsage.$v) -values {"" "Физ. лицо" "Юр. лицо" "ИП"}
       $f.cr$i delete 0 end
@@ -6579,7 +6579,7 @@ proc ProfileDialog::Create {w profilename} {
       $f.cr$i insert end ""
     } elseif {$v == "role" && $profilename != "SSL Server" } {
       label $f.lutil -text "Область использования:" -font $fnt(bold)
-      grid $f.lutil -row $i -column 3 -columnspan 1 -sticky w -padx 8 -pady 1mm
+      grid $f.lutil -row $i -column 3 -columnspan 1 -sticky w -padx 8 -pady 1m
       incr i
       ttk::combobox $f.cr$i -text "$v" -textvariable ::ProfileDialog::prof(CA_ext.extKeyUsage.$v) -values $userroles
       $f.cr$i delete 0 end
@@ -6588,7 +6588,7 @@ proc ProfileDialog::Create {w profilename} {
     }  else {
       continue
     }
-    grid $f.cr$i -row $i -column 3 -columnspan 1 -sticky we -padx 15mm ;# -pady 4
+    grid $f.cr$i -row $i -column 3 -columnspan 1 -sticky we -padx 15m ;# -pady 4
     grid rowconfigure $f $i -weight 0
     incr i
   }
