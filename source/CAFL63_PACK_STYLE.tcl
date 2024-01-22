@@ -2101,7 +2101,7 @@ array set profile_options {
   CA_ext.nsCertType.options {client server email objsign reserved sslCA emailCA objCA}
   CA_ext.keyUsage.options {digitalSignature nonRepudiation keyEncipherment dataEncipherment keyAgreement keyCertSign cRLSign encipherOnly decipherOnly}
   CA_ext.extKeyUsage.options {whois role serverAuth clientAuth codeSigning emailProtection ipsecEndSystem ipsecTunnel ipsecIKE ipsecUser timeStamping OCSPSigning msSGC nsSGC }
-  CA_ext.extKeyUsageRoles.options {serverAuth1 clientAuth1 codeSigning1 emailProtection1 ipsecEndSystem1 ipsecTunnel1 ipsecUser1 timeStamping1 OCSPSigning1 msSGC1 nsSGC1}
+  CA_ext.extKeyUsageRoles.options {serverAuth1 clientAuth1 codeSigning1 emailProtection1 ipsecEndSystem1 ipsecTunnel1 ipsecIKE1 ipsecUser1 timeStamping1 OCSPSigning1 msSGC1 nsSGC1}
   _DN_Fields {C ST L street O OU CN SN GN INN INNLE OGRN OGRNIP SNILS title emailAddress unstructuredName}
 
   _DN_Fields.labels {"Country" "State or Province" "City" "Organisation" "Organisational Unit" "Common Name" "INN" "INNLE" "Email Address"}
@@ -2931,20 +2931,21 @@ proc openssl::ConfigFile_GenerateValues {prof} {
   # key usage
   set p(line.keyUsage) [ConfigFile_IfExists    keyUsage p(CA_ext.keyUsage)]
   # extended key usage
-
+#parray p
   set pnew ""
-  foreach pt [split $p(CA_ext.extKeyUsage) ",\ "] {
-    if {$pt == ""} {continue}
-    if {$pnew != ""} {
-	append pnew ", "
-    }
-    if {$pt == "ipsecIKE"} {
-	append pnew "oid:1.3.6.1.5.5.7.3.17"
-    } else {
-	append pnew $pt
+  if {[info exists p(CA_ext.extKeyUsage)]} {
+    foreach pt [split $p(CA_ext.extKeyUsage) ",\ "] {
+	if {$pt == ""} {continue}
+	if {$pnew != ""} {
+	    append pnew ", "
+	}
+	if {$pt == "ipsecIKE"} {
+	    append pnew "oid:1.3.6.1.5.5.7.3.17"
+	} else {
+	    append pnew $pt
+	}
     }
   }
-
 #  set p(line.extKeyUsage) [ConfigFile_IfExists    extendedKeyUsage p(CA_ext.extKeyUsage)]
   set p(line.extKeyUsage) [ConfigFile_IfExists    extendedKeyUsage pnew]
   # netscape certificate type
