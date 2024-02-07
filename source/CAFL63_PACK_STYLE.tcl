@@ -2100,8 +2100,8 @@ array set profile_options {
   req.default_bits.labels        {"low grade (512 bits)" "medium grade (1024 bits)" "high grade (2048 bits)" "very high grade(4096 bits)"}
   CA_ext.nsCertType.options {client server email objsign reserved sslCA emailCA objCA}
   CA_ext.keyUsage.options {digitalSignature nonRepudiation keyEncipherment dataEncipherment keyAgreement keyCertSign cRLSign encipherOnly decipherOnly}
-  CA_ext.extKeyUsage.options {whois role serverAuth clientAuth codeSigning emailProtection ipsecEndSystem ipsecTunnel ipsecIKE ipsecUser timeStamping OCSPSigning msSGC nsSGC }
-  CA_ext.extKeyUsageRoles.options {serverAuth1 clientAuth1 codeSigning1 emailProtection1 ipsecEndSystem1 ipsecTunnel1 ipsecIKE1 ipsecUser1 timeStamping1 OCSPSigning1 msSGC1 nsSGC1}
+  CA_ext.extKeyUsage.options {whois role serverAuth clientAuth codeSigning emailProtection ipsecEndSystem ipsecTunnel ipsecIKE ipsecIKEIntermediate ipsecUser timeStamping OCSPSigning msSGC nsSGC }
+  CA_ext.extKeyUsageRoles.options {serverAuth1 clientAuth1 codeSigning1 emailProtection1 ipsecEndSystem1 ipsecTunnel1 ipsecIKE1 ipsecIKEIntermediate1 ipsecUser1 timeStamping1 OCSPSigning1 msSGC1 nsSGC1}
   _DN_Fields {C ST L street O OU CN SN GN INN INNLE OGRN OGRNIP SNILS title emailAddress unstructuredName}
 
   _DN_Fields.labels {"Country" "State or Province" "City" "Organisation" "Organisational Unit" "Common Name" "INN" "INNLE" "Email Address"}
@@ -2941,6 +2941,8 @@ proc openssl::ConfigFile_GenerateValues {prof} {
 	}
 	if {$pt == "ipsecIKE"} {
 	    append pnew "oid:1.3.6.1.5.5.7.3.17"
+	} elseif {$pt == "ipsecIKEIntermediate"} {
+	    append pnew "oid:1.3.6.1.5.5.8.2.2"
 	} else {
 	    append pnew $pt
 	}
@@ -6572,7 +6574,8 @@ proc ProfileDialog::Create {w profilename} {
   foreach v $opts(CA_ext.extKeyUsage.options) {
     if {$v == "whois" && $profilename != "SSL Server"} {
       label $f.lwho -text "Владелец сертификата:" -font $fnt(bold)
-      grid $f.lwho -row $i -column 3 -columnspan 1 -sticky w -padx 8 -pady 1m
+      grid $f.lwho -row $i -column 3 -columnspan 1 -sticky w -padx 8 
+      #-pady "1m 0"
       incr i
       ttk::combobox $f.cr$i -text "$v" -textvariable ::ProfileDialog::prof(CA_ext.extKeyUsage.$v) -values {"" "Физ. лицо" "Юр. лицо" "ИП"}
       $f.cr$i delete 0 end
@@ -6580,7 +6583,8 @@ proc ProfileDialog::Create {w profilename} {
       $f.cr$i insert end ""
     } elseif {$v == "role" && $profilename != "SSL Server" } {
       label $f.lutil -text "Область использования:" -font $fnt(bold)
-      grid $f.lutil -row $i -column 3 -columnspan 1 -sticky w -padx 8 -pady 1m
+      grid $f.lutil -row $i -column 3 -columnspan 1 -sticky w -padx 8 
+      #-pady "1m 0"
       incr i
       ttk::combobox $f.cr$i -text "$v" -textvariable ::ProfileDialog::prof(CA_ext.extKeyUsage.$v) -values $userroles
       $f.cr$i delete 0 end
@@ -6589,8 +6593,9 @@ proc ProfileDialog::Create {w profilename} {
     }  else {
       continue
     }
-    grid $f.cr$i -row $i -column 3 -columnspan 1 -sticky we -padx 15m ;# -pady 4
+    grid $f.cr$i -row $i -column 3 -rowspan 2 -columnspan 1 -sticky we -padx 15m ;# -pady 4
     grid rowconfigure $f $i -weight 0
+    incr i
     incr i
   }
   grid columnconfigure $f 3 -weight 1
