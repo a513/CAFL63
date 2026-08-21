@@ -26,5 +26,5 @@ tcl-враппер [tclexecomp](http://tclexecomp/sourceforge.net)
 
 Автор - [Орлов Владимир](http://museum.lissi-crypto.ru/)
 
-Email: vorlov@lissi.ru
+Email: vorlov@lissi-crypto.ru
 Copyright(C) [LISSI-Soft Ltd](http://soft.lissi.ru) 2017-2021
